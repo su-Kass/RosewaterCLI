@@ -15,6 +15,7 @@ import (
 	"errors"
 	"encoding/json"
 	"archive/zip"
+	"github.com/hugolgst/rich-go/client"
 )
 
 type UserData struct {
@@ -25,6 +26,57 @@ type UserData struct {
 	SysType	     string	// reports system type
 	CpuNum	     string	// reports amount of cpu cores
 	Username     string	// user username
+}
+
+const appID = "1560387470300946443"
+func RPCLogin() bool {
+	if err := client.Login(appID); err != nil {
+		return false
+	}
+	return true
+}
+
+func RPCActivity(aType string) {
+	start := time.Now()
+	if aType == "config" {
+		var err = client.SetActivity(client.Activity{
+			Details: "Configuring Rosewater",
+			State: "In RosewaterCLI",
+			LargeText: "Rosewater",
+			LargeImage: "rosewatericon",
+			Timestamps: &client.Timestamps{Start: &start},
+		})
+		if err != nil {
+			fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
+			fmt.Println(err)
+		}
+	}
+	if aType == "playing" {
+		var err = client.SetActivity(client.Activity{
+			Details: "Playing a game on Roblox",
+			State: "Using Rosewater",
+			LargeText: "Rosewater",
+			LargeImage: "rosewatericon",
+			Timestamps: &client.Timestamps{Start: &start},
+		})
+		if err != nil {
+			fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
+			fmt.Println(err)
+		}
+	}
+	if aType == "running" {
+		var err = client.SetActivity(client.Activity{
+			Details: "Playing Roblox",
+			State: "Using Rosewater",
+			LargeText: "Rosewater",
+			LargeImage: "rosewatericon",
+			Timestamps: &client.Timestamps{Start: &start},
+		})
+		if err != nil {
+			fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
+			fmt.Println(err)
+		}
+	}
 }
 
 func ReturnArguments() (flag string, data string) {

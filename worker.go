@@ -298,6 +298,7 @@ func RunRoblox() {
 	var rosemaryExec = filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)
 	var robloxApp = filepath.Join(envInfo.PrefixDir,"root","Applications","RobloxPlayer.app")
 
+	RPCActivity("running")
 	cmd := exec.Command(rosemaryExec, "run", robloxApp)
 	cmd.Env = append(os.Environ(), "ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"))
 	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s", envInfo.PrefixDir))}
@@ -351,6 +352,7 @@ func RunHeadless(uri string) bool {
 	args := []string{"run", robloxExe, uri}
 	cmd := exec.Command(rosemaryExec, args...)
 
+	RPCActivity("playing")
 	cmd.Env = append(os.Environ(), "ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir, "root"))
 
 	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log")

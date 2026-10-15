@@ -6,13 +6,13 @@ import (
 	"syscall"
 	"unsafe"
 	"fmt"
+	"github.com/hugolgst/rich-go/client"
 )
 
 // Code i stole, idek what this is!
 func isTerminal(f *os.File) bool {
 	var t syscall.Termios
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
-				       syscall.TCGETS, uintptr(unsafe.Pointer(&t)))
+	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),syscall.TCGETS, uintptr(unsafe.Pointer(&t)))
 	return errno == 0
 }
 
@@ -247,13 +247,16 @@ func startedUser() {
 
 func main() {
 	flag, data := ReturnArguments()
-
 	if flag == "--uri" {
+		RPCLogin()
 		RunHeadless(data)
+		defer client.Logout()
 		os.Exit(1)
 	}
 
 	if flag == "--not-headless" {
+		RPCLogin()
+		RPCActivity("config")
 		startedUser()
 		return
 	}
@@ -264,6 +267,9 @@ func main() {
 		}
 	}
 	if flag == "" {
+		RPCLogin()
+		RPCActivity("config")
 		startedUser()
 	}
+	defer client.Logout()
 }
