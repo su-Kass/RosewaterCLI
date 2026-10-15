@@ -58,7 +58,7 @@ Rosewater is not officially associated with roblox in any way.
 ## AI Disclosure:
 No AI has written code for RosewaterCLI (Or Rosewater as a whole), nor does any AI code exist in the project
 
-I LIKE MY SOFTWARE RUSHED IN TWO DAYS, MADE WITH NO PLANS, ENTIRELY BY MAN.
+I LIKE MY SOFTWARE RUSHED IN TWO DAYS, STARTED WITH NO PLANS, MADE BY MAN.
 
 ## License:
 GPLv3 Read more below.
