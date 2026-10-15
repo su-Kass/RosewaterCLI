@@ -255,6 +255,18 @@ func ReadDomain(url string) (version string, err error) {
 	return cv.ClientVersionUpload, nil
 }
 
+type SoftwareInfo struct {
+	Download    string
+	Version     string
+	Name        string
+}
+
+func DownloadSoftware(directory string, info SoftwareInfo) bool {
+	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Downloading "+info.Name+reset)
+	if !DownloadFileURL(info.Download, directory) {return false}
+	return true
+}
+
 // ReturnData returns a map of the user's data needed for setting up stuff
 //
 // returns map: HOME CURRENT SYSTYPE TEMPDIR CPUNUM USERNAME
