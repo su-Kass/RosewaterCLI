@@ -292,7 +292,7 @@ func InitialSetup() {
 	iconAsset.Directory = "Icons"
 	iconAsset.Asset = "AppIcon.icns"
 	var icon = DownloadAsset(envInfo.RosewaterIcons, iconAsset)
-	var robloxIcon = filepath.Join(envInfo.PrefixDir, "root", "applications","RobloxPlayer.app","Contents","Resources","AppIcon.icns")
+	var robloxIcon = filepath.Join(envInfo.PrefixDir, "root", "Applications","RobloxPlayer.app","Contents","Resources","AppIcon.icns")
 	os.Remove(robloxIcon)
 
 	CopyFile(icon, robloxIcon, 0644)
