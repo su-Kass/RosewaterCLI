@@ -304,32 +304,6 @@ func InitialSetup() {
 	SetupDesktop()
 }
 
-func RunRoblox() {
-	CheckForUpdates()
-	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Starting roblox"+reset)
-	var success, envInfo = GetEnvironment()
-	if !success {SetupEnvironment(true)}
-
-	var _, rosemaryInfo = getVersions()
-
-	var rosemaryExec = filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)
-	var robloxApp = filepath.Join(envInfo.PrefixDir,"root","Applications","RobloxPlayer.app")
-
-	var rpc RPCQuery
-	rpc.Action = "Playing a game on "
-	rpc.Where = "Using Rosewater"
-	RPCActivity(rpc)
-	var envVariables = []string{
-		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
-		"ROSEMARY_DECORATIONS=server",
-		"ROSEMARY_MENU=none",
-		"ROSEMARY_STEAM=0",
-	}
-	cmd := exec.Command(rosemaryExec, "run", robloxApp)
-	cmd.Env = append(os.Environ(), envVariables...)
-	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s", envInfo.PrefixDir))}
-}
-
 func Uninstall() {
 	var userData = ReturnData()
 	var rosewaterDir string = filepath.Join(userData.AppDir, "Rosewater")
@@ -391,6 +365,40 @@ func SetupDesktop() {
 
 	RunShell("desktop-file-validate "+desktopFile)
 	RunShell("update-desktop-database ~/.local/share/applications")
+}
+
+func RunRoblox() {
+	CheckForUpdates()
+	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Starting roblox"+reset)
+	var success, envInfo = GetEnvironment()
+	if !success {SetupEnvironment(true)}
+
+	var _, rosemaryInfo = getVersions()
+
+	var rosemaryExec = filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)
+	var robloxApp = filepath.Join(envInfo.PrefixDir,"root","Applications","RobloxPlayer.app")
+
+	var rpc RPCQuery
+	rpc.Action = "Playing a game on "
+	rpc.Where = "Using Rosewater"
+	RPCActivity(rpc)
+	var envVariables = []string{
+		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
+		"ROSEMARY_DECORATIONS=server",
+		"ROSEMARY_MENU=none",
+		"ROSEMARY_STEAM=0",
+	}
+	cmd := exec.Command(rosemaryExec, "run", robloxApp)
+	cmd.Env = append(os.Environ(), envVariables...)
+	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log")
+	logfile, _ := os.Create(logfileLocation)
+	defer logfile.Close()
+
+	cmd.Stdout = logfile
+	cmd.Stdin = logfile
+	cmd.Stderr = logfile
+
+	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s", envInfo.PrefixDir))}
 }
 
 func RunHeadless(uri string) bool {
