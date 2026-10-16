@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type release struct {
+type Release struct {
 	TagName string `json:"tag_name"`
 	Assets  []struct {
 		Name string `json:"name"`
@@ -43,7 +43,7 @@ func getLatestRosemary() (fetched error, rosemaryInfo SoftwareInfo) {
 		return err, info
 	}
 
-	var rel release
+	var rel Release
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err, info
@@ -105,6 +105,7 @@ type EnvironmentInfo struct {
 	RosemaryDir	    string
 	RobloxDir	    string
 	RosewaterFile	    string
+	RosewaterIcons	    string
 }
 
 func UpdateEnvironment(envInfo EnvironmentInfo) {
@@ -126,6 +127,7 @@ func SetupEnvironment(downloadAfter bool) {
 	var rosemaryDir string = filepath.Join(userData.AppDir, "Rosewater", "Downloads", "Rosemary")
 	var robloxDir string = filepath.Join(userData.AppDir, "Rosewater", "Downloads", "Roblox")
 	var rosewaterFile string = filepath.Join(userData.AppDir, "Rosewater", "RosewaterCLI.Headless")
+	var rosewaterIcons string = filepath.Join(userData.AppDir, "Rosewater", "Icons")
 
 	var prefixDir string = filepath.Join(userData.AppDir, "Rosewater", "Prefix")
 	var stateDir string = filepath.Join(userData.AppDir, "Rosewater", "State")
@@ -136,6 +138,7 @@ func SetupEnvironment(downloadAfter bool) {
 	MakeDir(stateDir)
 	MakeDir(rosemaryDir)
 	MakeDir(robloxDir)
+	MakeDir(rosewaterIcons)
 
 	MakeFile(stateFile)
 	self, _ := os.Executable()
@@ -145,6 +148,8 @@ func SetupEnvironment(downloadAfter bool) {
 	envInfo.RosemaryDir = rosemaryDir
 	envInfo.RobloxDir = robloxDir
 	envInfo.RosewaterFile = rosewaterFile
+	envInfo.RosewaterIcons = rosewaterIcons
+
 	UpdateEnvironment(envInfo)
 
 	if downloadAfter {InitialDownloads()}
@@ -165,13 +170,14 @@ func GetEnvironment() (sucess bool, data EnvironmentInfo) {
 	var rosemaryDir, _ = ReadLn(checkFile, 3)
 	var robloxDir, _ = ReadLn(checkFile, 4)
 	var rosewaterFile, _ = ReadLn(checkFile, 5)
+	var rosewaterIcons, _ = ReadLn(checkFile, 6)
 
 	envInfo.StateFile = stateFile
 	envInfo.PrefixDir = prefixDir
 	envInfo.RosemaryDir = rosemaryDir
 	envInfo.RobloxDir = robloxDir
 	envInfo.RosewaterFile = rosewaterFile
-
+	envInfo.RosewaterIcons = rosewaterIcons
 	return true, envInfo
 }
 
@@ -281,7 +287,7 @@ func InitialSetup() {
 	if err != nil {panic(fmt.Errorf("Failed to create prefix in %s\nCommand %s\n Reason: %w\n Out: %s", envInfo.PrefixDir, cmd, err, out))}
 
 	Unzip(robloxZip, filepath.Join(envInfo.PrefixDir, "root", "Applications"))
-	SetupDesktop()
+	SetupURI()
 }
 
 func RunRoblox() {
@@ -309,23 +315,25 @@ func Uninstall() {
 	var rosewaterDir string = filepath.Join(userData.AppDir, "Rosewater")
 	os.RemoveAll(rosewaterDir)
 
-	var desktopFile = filepath.Join(userData.AppDir, "applications","rosewater.desktop")
+	var desktopFile = filepath.Join(userData.AppDir, "applications","rosewateruri.desktop")
+	var desktopFile2 = filepath.Join(userData.AppDir, "applications","rosewater.desktop")
 	os.Remove(desktopFile)
+	os.Remove(desktopFile2)
 
 	RunShell("update-desktop-database ~/.local/share/applications")
 }
 
-func SetupDesktop() {
+func SetupURI() {
 	var success, envInfo = GetEnvironment()
 	if !success {SetupEnvironment(true)}
 
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Setting up user .desktop handling for URI parsing"+reset)
 	var userData = ReturnData()
-	var desktopFile string = filepath.Join(userData.AppDir, "applications", "rosewater.desktop")
+	var desktopFile string = filepath.Join(userData.AppDir, "applications", "rosewateruri.desktop")
 	MakeFile(desktopFile)
 
 	WriteLn(desktopFile, 1, "[Desktop Entry]")
-	WriteLn(desktopFile, 2, "Name=Rosewater")
+	WriteLn(desktopFile, 2, "Name=RosewaterURI")
 	WriteLn(desktopFile, 3, "Type=Application")
 	WriteLn(desktopFile, 4, "NoDisplay=true")
 	WriteLn(desktopFile, 5, "Terminal=false")
@@ -335,6 +343,34 @@ func SetupDesktop() {
 	RunShell("update-desktop-database ~/.local/share/applications")
 	RunShell("xdg-mime default "+desktopFile+" x-scheme-handler/roblox-player")
 	RunShell("xdg-mime query default x-scheme-handler/roblox-player")
+}
+
+func SetupDesktop() {
+	var success, envInfo = GetEnvironment()
+	if !success {SetupEnvironment(true)}
+
+	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Setting up desktop file for User"+reset)
+
+	var asset Asset
+	asset.Directory = "Icons"
+	asset.Asset = "rosewatericon_256.png"
+
+	var downloadedAsset = DownloadAsset(envInfo.RosewaterIcons, asset)
+
+	var userData = ReturnData()
+	var desktopFile string = filepath.Join(userData.AppDir, "applications", "rosewater.desktop")
+	MakeFile(desktopFile)
+
+	WriteLn(desktopFile, 1, "[Desktop Entry]")
+	WriteLn(desktopFile, 2, "Name=Rosewater")
+	WriteLn(desktopFile, 3, "Comment=Roblox on Linux through Rosemary!")
+	WriteLn(desktopFile, 4, "Icon="+downloadedAsset)
+	WriteLn(desktopFile, 5, "Type=Application")
+	WriteLn(desktopFile, 6, "Terminal=false")
+	WriteLn(desktopFile, 7, "Exec="+envInfo.RosewaterFile+" --run-rosewater")
+
+	RunShell("desktop-file-validate "+desktopFile)
+	RunShell("update-desktop-database ~/.local/share/applications")
 }
 
 func RunHeadless(uri string) bool {

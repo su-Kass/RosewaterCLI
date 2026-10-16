@@ -47,7 +47,8 @@ func RunShell(command string) error {
 	cmd := exec.Command("sh", "-c", command)
 
 	if err := cmd.Run(); err != nil {
-		fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Your command failed!"+reset)
+		var errout = fmt.Errorf("You had an error: %s", err)
+		fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" %w"+reset, errout)
 		return err
 	}
 	return nil
@@ -91,6 +92,19 @@ func DownloadFileURL(url string, fileName string) error {
 	}
 
 	return os.Rename(tmp, fileName)
+}
+
+const assetRepo string = "https://raw.githubusercontent.com/su-Kass/RosewaterCLI/main/"
+type Asset struct {
+	Directory string
+	Asset 	  string
+}
+
+func DownloadAsset(directory string, asset Asset) string {
+	var url string = filepath.Join(assetRepo, asset.Directory, asset.Asset)
+	var fileName = filepath.Join(directory, asset.Asset)
+	DownloadFileURL(url, fileName)
+	return fileName
 }
 
 type clientVersion struct {

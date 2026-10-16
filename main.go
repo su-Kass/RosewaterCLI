@@ -157,6 +157,7 @@ func advancedMenu() {
 		"do-downloads",
 		"do-setup",
 		"do-setup-env",
+		"do-setup-desktop",
 		"debug-diagnose",
 		"back",
 	}
@@ -165,7 +166,7 @@ func advancedMenu() {
 	var exit bool = false
 	switch choice {
 		case "uri-setup", "0":
-			SetupDesktop()
+			SetupURI()
 		case "parse-uri", "1":
 			parseURIMenu()
 		case "uninstall", "2":
@@ -180,9 +181,11 @@ func advancedMenu() {
 			InitialSetup()
 		case "do-setup-env", "7":
 			SetupEnvironment(false)
-		case "debug-diagnose", "8":
+		case "do-setup-desktop", "8":
+			SetupDesktop()
+		case "debug-diagnose", "9":
 			DiagnosticTool()
-		case "back", "9":
+		case "back", "10":
 			exit = true
 		default:
 			unknownOptionMenu(choice)
@@ -262,6 +265,12 @@ func startedUser() {
 
 func main() {
 	flag, data := ReturnArguments()
+
+	if flag == "--run-rosewater" {
+		RunRoblox()
+		os.Exit(1)
+	}
+
 	if flag == "--uri" {
 		RPCLogin()
 		RunHeadless(data)

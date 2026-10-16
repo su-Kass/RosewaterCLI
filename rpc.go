@@ -32,7 +32,7 @@ func RPCActivity(query RPCQuery) {
 	})
 
 	if err != nil {
-		fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
-		fmt.Println(err)
+		var errout = fmt.Errorf(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
+		fmt.Println("Failed, Reason: %w", errout)
 	}
 }
