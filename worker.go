@@ -316,8 +316,14 @@ func RunRoblox() {
 	rpc.Action = "Playing a game on "
 	rpc.Where = "Using Rosewater"
 	RPCActivity(rpc)
+	var envVariables = []string{
+		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
+		"ROSEMARY_DECORATIONS=server",
+		"ROSEMARY_MENU=none",
+		"ROSEMARY_STEAM=0",
+	}
 	cmd := exec.Command(rosemaryExec, "run", robloxApp)
-	cmd.Env = append(os.Environ(), "ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"))
+	cmd.Env = append(os.Environ(), envVariables...)
 	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s", envInfo.PrefixDir))}
 }
 
@@ -404,7 +410,13 @@ func RunHeadless(uri string) bool {
 	rpc.Where = "Using Rosewater"
 
 	RPCActivity(rpc)
-	cmd.Env = append(os.Environ(), "ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir, "root"))
+	var envVariables = []string{
+		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
+		"ROSEMARY_DECORATIONS=server",
+		"ROSEMARY_MENU=none",
+		"ROSEMARY_STEAM=0",
+	}
+	cmd.Env = append(os.Environ(), envVariables...)
 
 	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log")
 	logfile, _ := os.Create(logfileLocation)
