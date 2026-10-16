@@ -3,11 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 )
 
 type Release struct {
@@ -422,13 +425,54 @@ func RunHeadless(uri string) bool {
 	logfile, _ := os.Create(logfileLocation)
 	defer logfile.Close()
 
-	cmd.Stdout = logfile
-	cmd.Stderr = logfile
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} //yay process group yaayy
+	cmd.WaitDelay = 5 * time.Second
 
-	if err := cmd.Run(); err != nil {
+	logPipeRead, logPipeWrite := io.Pipe()
+
+	cmd.Stdout = logPipeWrite
+	cmd.Stderr = logPipeWrite
+
+	if err := cmd.Start(); err != nil {
 		return false
 	}
-	return true
+
+	var closed bool = false
+	stop := func() {
+		if closed {
+			return
+		}
+		closed = true
+
+		processID := cmd.Process.Pid
+		syscall.Kill(-processID, syscall.SIGTERM)
+
+		time.AfterFunc(time.Second*5, func() {
+			syscall.Kill(-processID, syscall.SIGKILL)
+		})
+	}
+
+	rules := []LogRule {
+		{
+			Match: "leaveUGCGameInternal",
+			Handler: func(line string) {stop()},
+		},
+	}
+
+	logRun := make(chan struct{})
+	go func() {
+		defer close(logRun)
+		LogScan(logPipeRead, logfile, rules)
+	}()
+	exited := cmd.Wait()
+	logPipeWrite.Close()
+	<-logRun
+
+	if closed {
+		return true
+	}
+
+	return exited == nil
 }
 
 

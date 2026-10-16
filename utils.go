@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"time"
 	"net/url"
+	"strings"
+	"bufio"
 )
 
 type UserData struct {
@@ -144,6 +146,25 @@ func ReadDomain(url string) (version string, err error) {
 	return cv.ClientVersionUpload, nil
 }
 
+type LogRule struct {
+	Match   string
+	Handler func(line string)
+}
+
+func LogScan(r io.Reader, out io.Writer, rules []LogRule) {
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 {
+
+			if out != nil {io.WriteString(out, line)}
+			for _, rule := range rules {if strings.Contains(line, rule.Match) {rule.Handler(line)}
+			}
+		}
+		if err != nil {return}
+	}
+}
+
 type SoftwareInfo struct {
 	Download    string
 	Version     string
@@ -159,7 +180,6 @@ func DownloadSoftware(directory string, info SoftwareInfo) bool {
 func ReturnData() UserData {
 	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Fetching user Data!"+reset)
 	var userData UserData
-	var homeDir, _ = os.UserHomeDir()
 	var currentDir, _ = os.Getwd()
 
 	var systemType string = runtime.GOOS
@@ -168,16 +188,11 @@ func ReturnData() UserData {
 
 	var userName string
 	var applicationDir string
-	switch runtime.GOOS {
-		case "linux":
-			applicationDir = filepath.Join(homeDir, ".local", "share")
-			userName = os.Getenv("USER")
-		case "windows":
-			applicationDir = filepath.Join(os.Getenv("LOCALAPPDATA"))
-			userName = os.Getenv("USERNAME")
-		default: applicationDir = "UNKNOWN!"
-	}
-	userData.HmeDir = homeDir
+	var env1 string = os.Getenv("XDG_DATA_HOME") // << feeling cute, might package flatpak later :3
+	if env1 == "" {
+		var dir, err = os.UserHomeDir()
+		if err == nil {applicationDir = filepath.Join(dir, ".local", "share")} else {panic(fmt.Errorf("Could not find user's home directory: %w", err))}
+	} else {applicationDir = env1}
 	userData.CurDir = currentDir
 	userData.SysType = systemType
 	userData.TmpDir = tempFolder
