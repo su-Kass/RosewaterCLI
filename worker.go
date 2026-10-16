@@ -116,6 +116,7 @@ func UpdateEnvironment(envInfo EnvironmentInfo) {
 	WriteLn(stateFile, 3, envInfo.RosemaryDir)
 	WriteLn(stateFile, 4, envInfo.RobloxDir)
 	WriteLn(stateFile, 5, envInfo.RosewaterFile)
+	WriteLn(stateFile, 6, envInfo.RosewaterIcons)
 }
 
 func SetupEnvironment(downloadAfter bool) {
@@ -287,7 +288,17 @@ func InitialSetup() {
 	if err != nil {panic(fmt.Errorf("Failed to create prefix in %s\nCommand %s\n Reason: %w\n Out: %s", envInfo.PrefixDir, cmd, err, out))}
 
 	Unzip(robloxZip, filepath.Join(envInfo.PrefixDir, "root", "Applications"))
+	var iconAsset Asset
+	iconAsset.Directory = "Icons"
+	iconAsset.Asset = "AppIcon.icns"
+	var icon = DownloadAsset(envInfo.RosewaterIcons, iconAsset)
+	var robloxIcon = filepath.Join(envInfo.PrefixDir, "root", "applications","RobloxPlayer.app","Contents","Resources","AppIcon.icns")
+	os.Remove(robloxIcon)
+
+	CopyFile(icon, robloxIcon, 0644)
+
 	SetupURI()
+	SetupDesktop()
 }
 
 func RunRoblox() {

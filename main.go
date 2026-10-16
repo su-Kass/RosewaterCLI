@@ -187,6 +187,8 @@ func advancedMenu() {
 			DiagnosticTool()
 		case "back", "10":
 			exit = true
+		case "exit":
+			os.Exit(1)
 		default:
 			unknownOptionMenu(choice)
 	}

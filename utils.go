@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+	"net/url"
 )
 
 type UserData struct {
@@ -61,7 +62,7 @@ func DownloadFileURL(url string, fileName string) error {
 
 	resp, err := client.Get(url)
 	if err != nil {
-		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " Failed to download file from " + url + reset)
+		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " %w Failed to download file from " + url + reset, err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -74,7 +75,7 @@ func DownloadFileURL(url string, fileName string) error {
 	tmp := fileName + ".part"
 	file, err := os.Create(tmp)
 	if err != nil {
-		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " Failed to create " + tmp + reset)
+		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " %w Failed to create " + tmp + reset, err)
 		return err
 	}
 
@@ -87,7 +88,7 @@ func DownloadFileURL(url string, fileName string) error {
 	}
 	if err != nil {
 		os.Remove(tmp)
-		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " An error occured during the download!" + reset)
+		fmt.Printf(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " An error occured during the download: %v\n" + reset, err)
 		return err
 	}
 
@@ -101,9 +102,16 @@ type Asset struct {
 }
 
 func DownloadAsset(directory string, asset Asset) string {
-	var url string = filepath.Join(assetRepo, asset.Directory, asset.Asset)
-	var fileName = filepath.Join(directory, asset.Asset)
-	DownloadFileURL(url, fileName)
+	assetURL, err := url.JoinPath(assetRepo, asset.Directory, asset.Asset)
+	if err != nil {
+		fmt.Printf(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Bad asset URL: %v"+reset+"\n", err)
+		return ""
+	}
+
+	fileName := filepath.Join(directory, asset.Asset)
+	if err := DownloadFileURL(assetURL, fileName); err != nil {
+		return ""
+	}
 	return fileName
 }
 
