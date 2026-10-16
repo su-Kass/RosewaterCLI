@@ -18,7 +18,7 @@ type release struct {
 	} `json:"assets"`
 }
 
-func getLatestRosemary() (fetched bool, rosemaryInfo SoftwareInfo) {
+func getLatestRosemary() (fetched error, rosemaryInfo SoftwareInfo) {
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Fetching latest Rosemary release!"+reset)
 	const api = "https://api.github.com/repos/microlift/rosemary/releases/latest"
 
@@ -27,26 +27,26 @@ func getLatestRosemary() (fetched bool, rosemaryInfo SoftwareInfo) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-		return false, info
+		return err, info
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return false, info
+		return err, info
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		fmt.Fprintln(os.Stderr, "unexpected status:", resp.Status)
-		return false, info
+		return err, info
 	}
 
 	var rel release
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return false, info
+		return err, info
 	}
 
 	var url string
@@ -68,35 +68,35 @@ func getLatestRosemary() (fetched bool, rosemaryInfo SoftwareInfo) {
 	info.Download = url
 	info.Version = version
 	info.Name = filename
-	return true, info
+	return nil, info
 }
 
-func getLatestRoblox() (worked bool, robloxInfo SoftwareInfo) {
+func getLatestRoblox() (worked error, robloxInfo SoftwareInfo) {
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Fetching latest Roblox release!"+reset)
 	const api = "https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer"
 	data, err := ReadDomain(api)
 	var info SoftwareInfo
-	if err != nil {return false, info}
+	if err != nil {return err, info}
 	var fileName string = data+"-RobloxPlayer.zip"
 	var zipURL string = "https://setup.rbxcdn.com/mac/" + fileName
 	info.Download = zipURL
 	info.Name = fileName
 	info.Version = data
-	return true, info
+	return nil, info
 }
 
-func downloadLatestRosemary(directory string) bool {
+func downloadLatestRosemary(directory string) error {
 	var worked, info = getLatestRosemary()
-	if !worked {return false}
-	if !DownloadSoftware(directory, info) {return false}
-	return true
+	if worked != nil {return worked}
+	if !DownloadSoftware(directory, info) {return worked}
+	return nil
 }
 
-func downloadLatestRoblox(directory string) bool {
+func downloadLatestRoblox(directory string) error {
 	var worked, info = getLatestRoblox()
-	if !worked {return false}
-	if !DownloadSoftware(directory, info) {return false}
-	return true
+	if worked != nil {return worked}
+	if !DownloadSoftware(directory, info) {return worked}
+	return nil
 }
 
 type EnvironmentInfo struct {
@@ -139,7 +139,7 @@ func SetupEnvironment(downloadAfter bool) {
 
 	MakeFile(stateFile)
 	self, _ := os.Executable()
-	CopyFile(self, rosewaterFile)
+	CopyFile(self, rosewaterFile, 0755)
 	envInfo.StateFile = stateFile
 	envInfo.PrefixDir = prefixDir
 	envInfo.RosemaryDir = rosemaryDir
@@ -175,19 +175,13 @@ func GetEnvironment() (sucess bool, data EnvironmentInfo) {
 	return true, envInfo
 }
 
-func clearDir(dir string) {
-	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Cleaning "+dir+reset)
-	os.RemoveAll(dir)
-	os.MkdirAll(dir, 0755)
-}
-
 func getVersions() (bloxInfo SoftwareInfo, roseInfo SoftwareInfo) {
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Retrieving software versions"+reset)
 	var worked, robloxInfo = getLatestRoblox()
-	if !worked {panic(fmt.Errorf("There was an issue recovering info from roblox's website!"))}
+	if worked != nil {panic(fmt.Errorf("There was an issue recovering info from roblox's website: %w", worked))}
 
 	var worked2, rosemaryInfo = getLatestRosemary()
-	if !worked2 {panic(fmt.Errorf("There was an issue recovering info from github's website!"))}
+	if worked2 != nil {panic(fmt.Errorf("There was an issue recovering info from github's website: %w ", worked2))}
 
 	return robloxInfo, rosemaryInfo
 }
@@ -204,8 +198,8 @@ func CheckForUpdates() {
 		fmt.Println(bold+green+"Roblox is fully updated to "+robloxInfo.Version+reset)} else
 	{
 		fmt.Println(red+underline+"OUT OF DATE!"+reset+red+" : "+reset+yellow+"Updating Roblox to "+robloxInfo.Version+reset)
-		clearDir(envInfo.RobloxDir)
-		if !downloadLatestRoblox(filepath.Join(envInfo.RobloxDir, robloxInfo.Name)) {panic(fmt.Errorf("Could not download roblox."))}
+		ClearDir(envInfo.RobloxDir)
+		if downloadLatestRoblox(filepath.Join(envInfo.RobloxDir, robloxInfo.Name)) != nil {panic(fmt.Errorf("Could not download roblox."))}
 		fmt.Println(bold+green+"Roblox has been updated to "+robloxInfo.Version+reset)
 	}
 
@@ -214,8 +208,8 @@ func CheckForUpdates() {
 		fmt.Println(bold+green+"Rosemary is fully updated to "+rosemaryInfo.Version+reset)} else
 	{
 		fmt.Println(red+underline+"OUT OF DATE!"+reset+red+" : "+reset+yellow+"Updating Rosemary to "+rosemaryInfo.Version+reset)
-		clearDir(envInfo.RosemaryDir)
-		if !downloadLatestRosemary(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)) {panic(fmt.Errorf("Could not download rosemary"))}
+		ClearDir(envInfo.RosemaryDir)
+		if downloadLatestRosemary(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)) != nil  {panic(fmt.Errorf("Could not download rosemary"))}
 		fmt.Println(bold+green+"Rosemary has been updated to "+rosemaryInfo.Version+reset)
 	}
 }
@@ -251,12 +245,12 @@ func InitialDownloads() {
 
 	var robloxVersionExists, _ = FileExists(filepath.Join(envInfo.RobloxDir, robloxInfo.Name))
 	if !robloxVersionExists {
-		if !downloadLatestRoblox(filepath.Join(envInfo.RobloxDir, robloxInfo.Name)) {panic(fmt.Errorf("Could not download roblox."))}
+		if err := downloadLatestRoblox(filepath.Join(envInfo.RobloxDir, robloxInfo.Name)); err != nil  {panic(fmt.Errorf("Could not download roblox: %w", err))}
 	}
 
 	var rosemaryVersionExists, _ = FileExists(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name))
 	if !rosemaryVersionExists {
-		if !downloadLatestRosemary(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)) {panic(fmt.Errorf("Could not download rosemary"))}
+		if err := downloadLatestRosemary(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)); err != nil  {panic(fmt.Errorf("Could not download rosemary: %w", err))}
 	}
 }
 
@@ -282,9 +276,12 @@ func InitialSetup() {
 
 	os.Chmod(rosemaryExec, 0755)
 	cmd := exec.Command(rosemaryExec, "prefix", "create", envInfo.PrefixDir)
-	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to create prefix in %s", envInfo.PrefixDir))}
+	cmd.Env = append(os.Environ(), "APPIMAGE_EXTRACT_AND_RUN=1")
+	out, err := cmd.CombinedOutput()
+	if err != nil {panic(fmt.Errorf("Failed to create prefix in %s\nCommand %s\n Reason: %w\n Out: %s", envInfo.PrefixDir, cmd, err, out))}
 
 	Unzip(robloxZip, filepath.Join(envInfo.PrefixDir, "root", "Applications"))
+	SetupDesktop()
 }
 
 func RunRoblox() {
@@ -298,7 +295,10 @@ func RunRoblox() {
 	var rosemaryExec = filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)
 	var robloxApp = filepath.Join(envInfo.PrefixDir,"root","Applications","RobloxPlayer.app")
 
-	RPCActivity("running")
+	var rpc RPCQuery
+	rpc.Action = "Playing a game on "
+	rpc.Where = "Using Rosewater"
+	RPCActivity(rpc)
 	cmd := exec.Command(rosemaryExec, "run", robloxApp)
 	cmd.Env = append(os.Environ(), "ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"))
 	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s", envInfo.PrefixDir))}
@@ -352,7 +352,11 @@ func RunHeadless(uri string) bool {
 	args := []string{"run", robloxExe, uri}
 	cmd := exec.Command(rosemaryExec, args...)
 
-	RPCActivity("playing")
+	var rpc RPCQuery
+	rpc.Action = "Playing a game on "
+	rpc.Where = "Using Rosewater"
+
+	RPCActivity(rpc)
 	cmd.Env = append(os.Environ(), "ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir, "root"))
 
 	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log")

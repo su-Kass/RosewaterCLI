@@ -1,21 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
-	"strings"
-	"io"
-	"io/fs"
 	"time"
-	"errors"
-	"encoding/json"
-	"archive/zip"
-	"github.com/hugolgst/rich-go/client"
 )
 
 type UserData struct {
@@ -24,59 +19,8 @@ type UserData struct {
 	TmpDir	     string	// temp dir
 	AppDir	     string	// application dir
 	SysType	     string	// reports system type
-	CpuNum	     string	// reports amount of cpu cores
+	CpuNum	     int	// reports amount of cpu cores
 	Username     string	// user username
-}
-
-const appID = "1560387470300946443"
-func RPCLogin() bool {
-	if err := client.Login(appID); err != nil {
-		return false
-	}
-	return true
-}
-
-func RPCActivity(aType string) {
-	start := time.Now()
-	if aType == "config" {
-		var err = client.SetActivity(client.Activity{
-			Details: "Configuring Rosewater",
-			State: "In RosewaterCLI",
-			LargeText: "Rosewater",
-			LargeImage: "rosewatericon",
-			Timestamps: &client.Timestamps{Start: &start},
-		})
-		if err != nil {
-			fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
-			fmt.Println(err)
-		}
-	}
-	if aType == "playing" {
-		var err = client.SetActivity(client.Activity{
-			Details: "Playing a game on Roblox",
-			State: "Using Rosewater",
-			LargeText: "Rosewater",
-			LargeImage: "rosewatericon",
-			Timestamps: &client.Timestamps{Start: &start},
-		})
-		if err != nil {
-			fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
-			fmt.Println(err)
-		}
-	}
-	if aType == "running" {
-		var err = client.SetActivity(client.Activity{
-			Details: "Playing Roblox",
-			State: "Using Rosewater",
-			LargeText: "Rosewater",
-			LargeImage: "rosewatericon",
-			Timestamps: &client.Timestamps{Start: &start},
-		})
-		if err != nil {
-			fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"Could not access RPC"+reset)
-			fmt.Println(err)
-		}
-	}
 }
 
 func ReturnArguments() (flag string, data string) {
@@ -90,36 +34,15 @@ func ReturnArguments() (flag string, data string) {
 }
 
 
-func ErrHandle(err error, exit bool) bool {
-	var errBool bool = false
+func ErrHandle(err error, exit bool) error {
 	if err != nil {
 		if exit {
 			panic(err)
 		}
-		errBool = true
 	}
-	return errBool
+	return err
 }
 
-func SearchForFiletype(folder, filetype string) (string, error) {
-	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Searching for "+filetype+" in "+folder+reset)
-	matches, err := filepath.Glob(filepath.Join(folder, "*."+filetype))
-	if err != nil {
-		return "", err
-	}
-	if len(matches) == 0 {
-		return "", fmt.Errorf("no file matching *.%s in %s", filetype, folder)
-	}
-	return filepath.Base(matches[0]), nil
-}
-
-//Runs a command in the user's shell; hopefully used only to run system programs, however can be used to do anything
-//
-// Has command and then arguments:
-//
-// echo <--- command
-//
-// 'Hello World!' <--- argument
 func RunShell(command string) error {
 	cmd := exec.Command("sh", "-c", command)
 
@@ -130,151 +53,44 @@ func RunShell(command string) error {
 	return nil
 }
 
-// Simply makes a directory, dont question why it exists.
-func MakeDir(Dir string) bool {
-	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Making "+Dir+reset)
-	if info, err := os.Stat(Dir); err == nil && info.IsDir() {
-		return true
-	}
-	os.MkdirAll(Dir, 0755)
-	return false
-}
+func DownloadFileURL(url string, fileName string) error {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.ResponseHeaderTimeout = 30 * time.Second
+	client := &http.Client{Transport: tr}
 
-func MoveFile(src, dst string) error {
-	if err := os.Rename(src, dst); err != nil {
-		return fmt.Errorf("could not move %s to %s: %w", src, dst, err)
-	}
-	return nil
-}
-
-// Copies a file somewhere else
-//
-// File, Directory
-func CopyFile(file string, dir string) error {
-	data, err := os.ReadFile(file)
+	resp, err := client.Get(url)
 	if err != nil {
+		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " Failed to download file from " + url + reset)
 		return err
 	}
-	return os.WriteFile(dir, data, 0755)
-}
+	defer resp.Body.Close()
 
-// Makes a file at the directory
-//
-// Returns an error
-func MakeFile(fileName string) error {
-	_, err := os.Create(fileName)
-	return err
-}
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " Failed to download file from " + url + reset)
+		return fmt.Errorf("unexpected status: %s", resp.Status)
+	}
 
-func Unzip(src, dest string) error {
-	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Unzipping "+src+" to "+dest+reset)
-	r, err := zip.OpenReader(src)
+	tmp := fileName + ".part"
+	file, err := os.Create(tmp)
 	if err != nil {
+		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " Failed to create " + tmp + reset)
 		return err
 	}
-	defer r.Close()
 
-	for _, f := range r.File {
-		target := filepath.Join(dest, f.Name)
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(target, 0755)
-			continue
-		}
-		os.MkdirAll(filepath.Dir(target), 0755)
-
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		if f.Mode()&os.ModeSymlink != 0 {
-			link, _ := io.ReadAll(rc)
-			os.Symlink(string(link), target)
-		} else {
-			out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode().Perm())
-			if err != nil {
-				rc.Close()
-				return err
-			}
-			io.Copy(out, rc)
-			out.Close()
-		}
-		rc.Close()
+	n, err := io.Copy(file, resp.Body)
+	if cerr := file.Close(); err == nil {
+		err = cerr
 	}
-	return nil
-}
-
-func FileExists(path string) (bool, error) {
-	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Checking path to "+path+reset)
-	info, err := os.Stat(path)
-	if err == nil {
-		return !info.IsDir(), nil
+	if err == nil && resp.ContentLength > 0 && n != resp.ContentLength {
+		err = fmt.Errorf("truncated download: got %d of %d bytes", n, resp.ContentLength)
 	}
-	if errors.Is(err, fs.ErrNotExist) {
-		return false, nil
-	}
-	return false, err // permissions or some other problem
-}
-
-// Writes a line for a given file
-//
-// Returns error
-func WriteLn(fileName string, line int, text string) error{
-	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Writing "+text+" to "+fileName+reset)
-	data, err := os.ReadFile(fileName)
 	if err != nil {
+		os.Remove(tmp)
+		fmt.Println(bold + red + "↶(•̀ᴗ•́)Ψ :" + reset + yellow + " An error occured during the download!" + reset)
 		return err
 	}
-	lines := strings.Split(string(data), "\n")
 
-	for len(lines) < line {
-		lines = append(lines, "")
-	}
-	lines[line-1] = text
-	return os.WriteFile(fileName, []byte(strings.Join(lines, "\n")), 0644)
-}
-
-// Reads the given line for the given file.ReadLn
-//
-// Returns data + success bool
-func ReadLn(fileName string, line int) (string, bool){
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		return "", false
-	}
-	lines := strings.Split(string(data), "\n")
-
-	if line < 1 || line > len(lines) {
-		return "", false
-	}
-	return lines[line-1], true
-}
-
-// Downloads a file from a given URL and puts it into a given directory with a certain name.
-func DownloadFileURL(url string, fileName string) bool {
-
-	data, err := http.Get(url)
-	if err != nil {
-		fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Failed to download file from "+url+reset)
-		return false
-	}
-	defer data.Body.Close()
-
-	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Creating file "+fileName+reset)
-	file, err := os.Create(fileName)
-	if err != nil {
-		fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Failed to download file to "+fileName+reset)
-		return false
-	}
-	defer file.Close()
-	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+green+" Copying file to "+fileName+reset)
-	if _, err := io.Copy(file, data.Body); err != nil {
-		fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+"An error occured during the download!"+reset)
-		return false
-	}
-
-	return true
+	return os.Rename(tmp, fileName)
 }
 
 type clientVersion struct {
@@ -282,7 +98,6 @@ type clientVersion struct {
 	ClientVersionUpload string `json:"clientVersionUpload"`
 }
 
-// reads the roblox domain to get the version
 func ReadDomain(url string) (version string, err error) {
 	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Reading data from "+url+reset)
 
@@ -315,13 +130,10 @@ type SoftwareInfo struct {
 
 func DownloadSoftware(directory string, info SoftwareInfo) bool {
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Downloading "+info.Name+reset)
-	if !DownloadFileURL(info.Download, directory) {return false}
+	if DownloadFileURL(info.Download, directory) != nil {return false}
 	return true
 }
 
-// ReturnData returns a map of the user's data needed for setting up stuff
-//
-// returns map: HOME CURRENT SYSTYPE TEMPDIR CPUNUM USERNAME
 func ReturnData() UserData {
 	fmt.Println(bold+red+"↶(•̀ᴗ•́)Ψ :"+reset+yellow+" Fetching user Data!"+reset)
 	var userData UserData
@@ -330,7 +142,7 @@ func ReturnData() UserData {
 
 	var systemType string = runtime.GOOS
 	var tempFolder string = os.TempDir()
-	var cpuNum string = strconv.Itoa(runtime.NumCPU())
+	var cpuNum int = runtime.NumCPU()
 
 	var userName string
 	var applicationDir string

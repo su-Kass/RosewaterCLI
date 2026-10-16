@@ -96,6 +96,11 @@ func failedURIMenu() {
 }
 
 func parseURIMenu() {
+	var rpc RPCQuery
+	rpc.Action = "Parsing URI "
+	rpc.Where = "In RosewaterCLI - parseURIMenu()"
+	RPCActivity(rpc)
+
 	var parserURIContext Context
 	parserURIContext.Header = "Rosewater URI Parser"
 	parserURIContext.Content = []string{
@@ -117,6 +122,11 @@ func parseURIMenu() {
 }
 
 func advancedMenu() {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - advancedMenu()"
+	RPCActivity(rpc)
+
 	var advancedContext Context
 	advancedContext.Header = "Rosewater Developer Debugging"
 	advancedContext.Content = []string{
@@ -183,6 +193,11 @@ func advancedMenu() {
 }
 
 func startedUser() {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - startedUser()"
+	RPCActivity(rpc)
+
 	var starterContext Context
 	var starterHeader string = "Welcome to RosewaterCLI!"
 	starterInfo := [7]string{
@@ -256,7 +271,6 @@ func main() {
 
 	if flag == "--not-headless" {
 		RPCLogin()
-		RPCActivity("config")
 		startedUser()
 		return
 	}
@@ -268,7 +282,6 @@ func main() {
 	}
 	if flag == "" {
 		RPCLogin()
-		RPCActivity("config")
 		startedUser()
 	}
 	defer client.Logout()
