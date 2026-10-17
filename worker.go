@@ -286,7 +286,7 @@ func InitialSetup() {
 
 	os.Chmod(rosemaryExec, 0755)
 	cmd := exec.Command(rosemaryExec, "prefix", "create", envInfo.PrefixDir)
-	cmd.Env = append(os.Environ(), "APPIMAGE_EXTRACT_AND_RUN=1")
+	cmd.Env = append(os.Environ(), "APPIMAGE_EXTRACT_AND_RUN=1") //ex
 	out, err := cmd.CombinedOutput()
 	if err != nil {panic(fmt.Errorf("Failed to create prefix in %s\nCommand %s\n Reason: %w\n Out: %s", envInfo.PrefixDir, cmd, err, out))}
 
