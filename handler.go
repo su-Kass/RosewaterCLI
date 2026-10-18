@@ -1,10 +1,12 @@
 package main
 
+// libra- oh nevermind this is fine
 import (
 	"fmt"
 	"strconv"
 )
 
+// the data of the context menu, used for structuring
 type Context struct {
 	Header       string
 	Content	     []string
@@ -12,6 +14,7 @@ type Context struct {
 	Length       int16
 }
 
+// woa........ theme stuff is stored here for some reason............
 const (
 	reset     = "\033[0m"
 	bold      = "\033[1m"
@@ -25,21 +28,24 @@ const (
 	cyan      = "\033[36m"
 )
 
+// prompt visuals and display
 func Prompt() (response string) {
 	fmt.Print(bold+green+"/ᐠ˵- ⩊ -˵マ "+reset)
 	fmt.Print(dim+"Choice:"+reset)
 	fmt.Print(bold+red)
 	var input string
 	fmt.Scanln(&input)
-	fmt.Print(reset)
+	fmt.Print(reset) // yeah im sure this is the proper way to do this
 	return input
 }
 
+// silly thing that just structures a context
 func MakeContext(header string, content []string, options []string) Context {
-	return Context{Header: header, Content: content, Options: options}
+	return Context{Header: header, Content: content, Options: options} // i should use this more, idk why i dont, pretty cool..
 }
 
-
+// omg CLI slop!!!
+// makes the actual visuals of the context, fun enough this makes this whole thing themable lol...
 func readContext(readTarget Context) {
 	fmt.Println(bold+underline+readTarget.Header+reset)
 	fmt.Println(bold+"--------------------------------------------"+reset)
@@ -52,17 +58,20 @@ func readContext(readTarget Context) {
 	}
 }
 
-func contextLines(c Context) int {
-	return 4 + len(c.Content) + len(c.Options) // header, separator, "OPTIONS", prompt line
+//blehh gets the length of the context
+func contextLines(cont Context) int {
+	return 4 + len(cont.Content) + len(cont.Options)
 }
 
-func clearContext(c Context) {
-	fmt.Printf("\033[%dA\r\033[J", contextLines(c))
+// #ansis slop
+func clearContext(cont Context) {
+	fmt.Printf("\033[%dA\r\033[J", contextLines(cont))
 }
 
-func ContextPrompt(c Context) string {
-	readContext(c)
+// yay, actually format the context into something usable
+func ContextPrompt(cont Context) string {
+	readContext(cont)
 	answer := Prompt()
-	clearContext(c)
+	clearContext(cont)
 	return answer
 }

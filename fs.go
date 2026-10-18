@@ -1,5 +1,6 @@
 package main
 
+// more lib slop
 import (
 	"archive/zip"
 	"errors"
@@ -10,6 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+// all of this stuff is basically just clones of bash commands but written in go so that i didnt need to use bash in any way, is pretty useful
+// yay
 
 func ClearDir(dir string) {
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Cleaning "+dir+reset)

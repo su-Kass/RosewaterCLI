@@ -1,5 +1,6 @@
 package main
 
+// woaoaoaoaoao
 import (
 	"fmt"
 	"time"
@@ -7,6 +8,7 @@ import (
 	"github.com/hugolgst/rich-go/client"
 )
 
+// id for the app used
 const appID = "1560387470300946443"
 func RPCLogin() bool {
 	return client.Login(appID) == nil
@@ -21,7 +23,6 @@ type RPCQuery struct {
 }
 
 func RPCActivity(query RPCQuery) {
-
 	start := time.Now()
 	var err = client.SetActivity(client.Activity{
 		Details: query.Action+programName,

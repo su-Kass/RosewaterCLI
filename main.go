@@ -4,19 +4,19 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
-	"unsafe"
+	"unsafe" // imported for ONE type in this whole file btw
 	"fmt"
-	"github.com/hugolgst/rich-go/client"
+	"github.com/hugolgst/rich-go/client" // smh client.logout!!
 )
 
-// Code i stole, idek what this is!
+// code i stole, idek what this is other than it somehow works!!!
 func isTerminal(f *os.File) bool {
 	var t syscall.Termios
 	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),syscall.TCGETS, uintptr(unsafe.Pointer(&t)))
 	return errno == 0
 }
 
-// Recognized terminals by the --not-headless flag
+// recognized terminals by the --not-headless flag
 var terminals = []struct{ name, flag string }{
 	{"x-terminal-emulator", "-e"},
 	{"gnome-terminal", "--"},
@@ -29,7 +29,7 @@ var terminals = []struct{ name, flag string }{
 	{"xterm", "-e"},
 }
 
-// Code just to launch ANY terminal if someone double clicks it (because people will)
+// code just to launch ANY terminal if someone double clicks it (because people will)
 func launchTerminal() bool {
 	exe, err := os.Executable()
 	if err != nil {
@@ -55,6 +55,9 @@ func launchTerminal() bool {
 	return false
 }
 
+// menu that is shown when an option is not recognized!!!
+// all of this stuff could just be consts or files buttt....
+// that's boring and i'm lazy......
 func unknownOptionMenu(command string) {
 	var unknownMenuContext Context
 	unknownMenuContext.Header = "Unknown command!"
@@ -76,6 +79,7 @@ func unknownOptionMenu(command string) {
 	}
 }
 
+// alt menu for uri parser
 func failedURIMenu() {
 	var parserURIContext Context
 	parserURIContext.Header = "Rosewater URI Parser"
@@ -95,6 +99,8 @@ func failedURIMenu() {
 	advancedMenu()
 }
 
+// silly little uri parser menu, was used for when i was testing the URI parsing of macos's client, it's basically useless now though
+// lol..
 func parseURIMenu() {
 	var rpc RPCQuery
 	rpc.Action = "Parsing URI "
@@ -121,6 +127,60 @@ func parseURIMenu() {
 	advancedMenu()
 }
 
+// menu for adding/removing fast flags
+func fastFlagMenu() {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - fastFlagMenu()"
+	RPCActivity(rpc)
+
+	var fastFlagContext Context
+	fastFlagContext.Header = "Rosewater Fast Flag Configuration"
+	fastFlagContext.Content = []string{
+		"This is the fflag config menu for Rosewater",
+		"You can add an fflag with 'fflag-add'",
+		"You can remove one with 'fflag-remove'",
+		"both options take you to a new menu",
+		"Current FFlags: ",
+	}
+}
+
+// user configuration menu
+func usrConfigMenu() {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - usrConfigMenu()"
+	RPCActivity(rpc)
+
+	var configContext Context
+	configContext.Header = "Rosewater User Config"
+	configContext.Content = []string{
+		"This is the Rosewater User Configuration Menu",
+		"It contains options for you to customize your user experience",
+		"",
+		"Some of the options should be familiar, you should search for the terms",
+		"If you do not understand them!",
+	}
+	configContext.Options = []string{
+		"fflag-menu",
+		"rpc-menu",
+		"rosestrap-menu",
+	}
+	var answer string = ContextPrompt(configContext)
+
+	switch answer {
+		case "fflag-menu", "0":
+
+		case "rpc-menu", "1":
+
+		case "rosestrap-menu", "2":
+
+		default: unknownOptionMenu(answer)
+	}
+}
+
+// user advanced menu, we LOVE recursion!!!!
+// just gives user more advanced options
 func advancedMenu() {
 	var rpc RPCQuery
 	rpc.Action = "Configuring "
@@ -144,6 +204,7 @@ func advancedMenu() {
 		"do-setup -- sets up Rosewater",
 		"do-setup-env -- sets up specifically the Rosewater environment",
 		"do-setup-upd-env -- updates the Rosewater environment",
+		"do-setup-cfg",
 		"debug-diagnose -- Gives all information from the Rosewater environment",
 		"back -- goes back to the previous menu",
 	}
@@ -158,6 +219,7 @@ func advancedMenu() {
 		"do-setup",
 		"do-setup-env",
 		"do-setup-desktop",
+		"do-setup-cfg",
 		"debug-diagnose",
 		"back",
 	}
@@ -172,7 +234,7 @@ func advancedMenu() {
 		case "uninstall", "2":
 			Uninstall()
 		case "run-roblox", "3":
-			RunRoblox()
+			RunHeadless("app")
 		case "check-updates", "4":
 			DiagnosticCheckVersions()
 		case "do-downloads", "5":
@@ -183,9 +245,11 @@ func advancedMenu() {
 			SetupEnvironment(false)
 		case "do-setup-desktop", "8":
 			SetupDesktop()
-		case "debug-diagnose", "9":
+		case "do-setup-cfg", "9":
+			SetupUserConfigFiles()
+		case "debug-diagnose", "10":
 			DiagnosticTool()
-		case "back", "10":
+		case "back", "11":
 			exit = true
 		case "exit":
 			os.Exit(1)
@@ -197,6 +261,9 @@ func advancedMenu() {
 	}
 }
 
+// simple user menu, if you dont know how to use this then like whatever yo!!!
+// we love declaring variables multiple times, honestly i should probably pass the variables made here to the next instance to stop the silly memory leak-like behaviour
+// oh well... this is just a shitty installer anyways :3
 func startedUser() {
 	var rpc RPCQuery
 	rpc.Action = "Configuring "
@@ -253,7 +320,7 @@ func startedUser() {
 				Uninstall()
 			}
 		case "run", "3":
-			RunRoblox()
+			RunHeadless("app")
 		case "debug", "4":
 			advancedMenu()
 		case "exit", "5":
@@ -265,11 +332,12 @@ func startedUser() {
 	startedUser()
 }
 
+// lazy ass flags implementation because i dont care :sob:
 func main() {
 	flag, data := ReturnArguments()
 
 	if flag == "--run-rosewater" {
-		RunRoblox()
+		RunHeadless("app")
 		os.Exit(1)
 	}
 
@@ -280,6 +348,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// code just has a sort of loop break here for the launchTerminal() function lol
 	if flag == "--not-headless" {
 		RPCLogin()
 		startedUser()
