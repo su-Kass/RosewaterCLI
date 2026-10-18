@@ -12,7 +12,7 @@ func RPCLogin() bool {
 	return client.Login(appID) == nil
 }
 
-const logoImageName string = "rosewatericon"
+const logoImageName string = "rosewatericon2"
 const programName string = "Rosewater"
 
 type RPCQuery struct {

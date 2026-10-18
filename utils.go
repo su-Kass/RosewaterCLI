@@ -27,12 +27,8 @@ type UserData struct {
 }
 
 func ReturnArguments() (flag string, data string) {
-	if len(os.Args) > 1 {
-		flag = os.Args[1]
-	}
-	if len(os.Args) > 2 {
-		data = os.Args[2]
-	}
+	if len(os.Args) > 1 {flag = os.Args[1]}
+	if len(os.Args) > 2 {data = os.Args[2]}
 	return flag, data
 }
 

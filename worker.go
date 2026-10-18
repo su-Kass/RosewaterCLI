@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"debug/elf"
 )
 
 type Release struct {
@@ -255,12 +256,16 @@ func InitialDownloads() {
 
 	var robloxVersionExists, _ = FileExists(filepath.Join(envInfo.RobloxDir, robloxInfo.Name))
 	if !robloxVersionExists {
-		if err := downloadLatestRoblox(filepath.Join(envInfo.RobloxDir, robloxInfo.Name)); err != nil  {panic(fmt.Errorf("Could not download roblox: %w", err))}
+		if err := downloadLatestRoblox(filepath.Join(envInfo.RobloxDir, robloxInfo.Name)); err != nil  {
+			panic(fmt.Errorf("Could not download roblox: %w", err))
+		}
 	}
 
 	var rosemaryVersionExists, _ = FileExists(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name))
 	if !rosemaryVersionExists {
-		if err := downloadLatestRosemary(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)); err != nil  {panic(fmt.Errorf("Could not download rosemary: %w", err))}
+		if err := downloadLatestRosemary(filepath.Join(envInfo.RosemaryDir, rosemaryInfo.Name)); err != nil  {
+			panic(fmt.Errorf("Could not download rosemary: %w", err))
+		}
 	}
 }
 
@@ -367,6 +372,46 @@ func SetupDesktop() {
 	RunShell("update-desktop-database ~/.local/share/applications")
 }
 
+func findPulseCommon() (string, bool) {
+	var dirs []string
+
+	for _, d := range []string{"/usr/lib", "/usr/lib64", "/lib64", "/usr/lib/x86_64-linux-gnu", "/lib/x86_64-linux-gnu"} {
+
+			real, err := filepath.EvalSymlinks(filepath.Join(d, "libpulse.so.0"))
+			if err != nil {
+				continue
+			}
+
+			origin := filepath.Dir(real)
+			if f, err := elf.Open(real); err == nil {
+				for _, tag := range []elf.DynTag{elf.DT_RUNPATH, elf.DT_RPATH} {
+					vals, _ := f.DynString(tag)
+					for _, v := range vals {
+						for _, dir := range strings.Split(v, ":") {
+							dir = strings.ReplaceAll(dir, "${ORIGIN}", origin)
+							dir = strings.ReplaceAll(dir, "$ORIGIN", origin)
+							dirs = append(dirs, dir)
+						}
+					}
+				}
+				f.Close()
+			}
+
+			dirs = append(dirs, filepath.Join(origin, "pulseaudio"))
+			break
+		}
+
+		dirs = append(dirs,"/usr/lib/pulseaudio", "/usr/lib64/pulseaudio", "/usr/lib/x86_64-linux-gnu/pulseaudio")
+
+		for _, dir := range dirs {
+			matches, _ := filepath.Glob(filepath.Join(dir, "libpulsecommon-*.so"))
+			if len(matches) > 0 {
+				return matches[0], true
+			}
+		}
+		return "", false
+}
+
 func RunRoblox() {
 	CheckForUpdates()
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Starting roblox"+reset)
@@ -381,12 +426,18 @@ func RunRoblox() {
 	var rpc RPCQuery
 	rpc.Action = "Playing a game on "
 	rpc.Where = "Using Rosewater"
+
+	var lib, ok = findPulseCommon()
+	if !ok {lib = ""}
+
 	RPCActivity(rpc)
 	var envVariables = []string{
 		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
 		"ROSEMARY_DECORATIONS=server",
 		"ROSEMARY_MENU=none",
 		"ROSEMARY_STEAM=0",
+		"ROSEMARY_WEBKIT=1",
+		"LD_PRELOAD="+lib,
 	}
 	cmd := exec.Command(rosemaryExec, "run", robloxApp)
 	cmd.Env = append(os.Environ(), envVariables...)
@@ -398,7 +449,7 @@ func RunRoblox() {
 	cmd.Stdin = logfile
 	cmd.Stderr = logfile
 
-	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s", envInfo.PrefixDir))}
+	if err := cmd.Run(); err != nil {panic(fmt.Errorf("Failed to run the roblox player! %s\n Reason: %w", envInfo.PrefixDir, err))}
 }
 
 func RunHeadless(uri string) bool {
@@ -420,12 +471,16 @@ func RunHeadless(uri string) bool {
 	rpc.Action = "Playing a game on "
 	rpc.Where = "Using Rosewater"
 
+	var lib, ok = findPulseCommon()
+	if !ok {lib = ""}
+
 	RPCActivity(rpc)
 	var envVariables = []string{
 		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
 		"ROSEMARY_DECORATIONS=server",
 		"ROSEMARY_MENU=none",
 		"ROSEMARY_STEAM=0",
+		"LD_PRELOAD="+lib,
 	}
 	cmd.Env = append(os.Environ(), envVariables...)
 
