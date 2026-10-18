@@ -263,7 +263,7 @@ func SetupUserConfigFiles() {
 	if !success {panic(fmt.Errorf("Could not get environment for user files!"))}
 
 	var fastFlagFile = info.UserFFlagFile
-
+	fmt.Printf("user fflag file = %s\n", fastFlagFile)
 	var preference UserPreference
 	// defaults
 	preference.RPC.Delay = 3
@@ -298,6 +298,8 @@ func GetEnvironment() (sucess bool, data EnvironmentInfo) {
 	var robloxDir, _ = ReadLn(checkFile, 4)
 	var rosewaterFile, _ = ReadLn(checkFile, 5)
 	var rosewaterIcons, _ = ReadLn(checkFile, 6)
+	var userConfigFile, _ = ReadLn(checkFile, 7)
+	var userFFlagFile, _ = ReadLn(checkFile, 8)
 
 	envInfo.StateFile = stateFile
 	envInfo.PrefixDir = prefixDir
@@ -305,6 +307,9 @@ func GetEnvironment() (sucess bool, data EnvironmentInfo) {
 	envInfo.RobloxDir = robloxDir
 	envInfo.RosewaterFile = rosewaterFile
 	envInfo.RosewaterIcons = rosewaterIcons
+	envInfo.UserConfigFile = userConfigFile
+	envInfo.UserFFlagFile = userFFlagFile
+
 	return true, envInfo
 }
 
@@ -579,9 +584,15 @@ type bloxstrapQuery struct {
 // replaces RunRoblox() now because it was annoying to have two functions for starting
 func RunHeadless(uri string) bool {
 	defer client.Logout()
-	fmt.Println(bold + green + "/ᐠ˵- ⩊ -˵マ: " + reset + blue + "Starting roblox" + reset)
+	log.Println(bold + green + "/ᐠ˵- ⩊ -˵マ: " + reset + blue + "Starting roblox" + reset)
 	var success, envInfo = GetEnvironment()
 	if !success {os.Exit(1)}
+
+	// logging positions
+	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log") // it's my loggerona!
+	log2, _ := os.Create(logfileLocation+"2")
+	defer log2.Close()
+	log.SetOutput(log2)
 
 	var _, rosemaryInfo = getVersions()
 
@@ -620,7 +631,6 @@ func RunHeadless(uri string) bool {
 
 	cmd.Env = append(os.Environ(), envVariables...)
 
-	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log") // it's my loggerona!
 	logfile, _ := os.Create(logfileLocation)
 	defer logfile.Close()
 
@@ -631,10 +641,6 @@ func RunHeadless(uri string) bool {
 
 	cmd.Stdout = logPipeWrite
 	cmd.Stderr = logPipeWrite // STDs
-
-	f, _ := os.Create(logfileLocation+"2")
-	defer f.Close()
-	log.SetOutput(f)
 
 	if err := cmd.Start(); err != nil {return false}
 
@@ -776,6 +782,8 @@ func DiagnosticTool() {
 		fmt.Println(debugSuffix+"PrefixDir="+envInfo.PrefixDir+reset)
 		fmt.Println(debugSuffix+"RosemaryDir="+envInfo.RosemaryDir+reset)
 		fmt.Println(debugSuffix+"RobloxDir="+envInfo.RobloxDir+reset)
+		fmt.Println(debugSuffix+"ConfigFile="+envInfo.UserConfigFile+reset)
+		fmt.Println(debugSuffix+"FFlagFile="+envInfo.UserFFlagFile+reset)
 	}
 	var searchDir string = filepath.Join(envInfo.PrefixDir,"root","Applications","RobloxPlayer.app","Contents")
 	file, err = SearchForFiletype(searchDir, "plist")

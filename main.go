@@ -265,6 +265,7 @@ func advancedMenu() {
 // we love declaring variables multiple times, honestly i should probably pass the variables made here to the next instance to stop the silly memory leak-like behaviour
 // oh well... this is just a shitty installer anyways :3
 func startedUser() {
+	defer client.Logout()
 	var rpc RPCQuery
 	rpc.Action = "Configuring "
 	rpc.Where = "In RosewaterCLI - startedUser()"
@@ -297,13 +298,11 @@ func startedUser() {
 	var given = ContextPrompt(starterContext)
 
 	switch given {
-		case "full-install", "0":
+		case "install", "0":
 			SetupEnvironment(false)
 			InitialDownloads()
 			InitialSetup()
-		case "update", "1":
-			CheckForUpdates()
-		case "uninstall", "2":
+		case "uninstall", "1":
 			var uninstallContext Context
 			uninstallContext.Header = "Uninstall Warning"
 			uninstallContext.Content = []string{
@@ -319,11 +318,11 @@ func startedUser() {
 			if choice == "YES" || choice == "0" {
 				Uninstall()
 			}
-		case "run", "3":
+		case "run", "2":
 			RunHeadless("app")
-		case "debug", "4":
+		case "debug", "3":
 			advancedMenu()
-		case "exit", "5":
+		case "exit", "4":
 			os.Exit(1)
 		default:
 			unknownOptionMenu(given)
@@ -344,7 +343,6 @@ func main() {
 	if flag == "--uri" {
 		RPCLogin()
 		RunHeadless(data)
-		defer client.Logout()
 		os.Exit(1)
 	}
 
