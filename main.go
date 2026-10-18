@@ -7,6 +7,7 @@ import (
 	"unsafe" // imported for ONE type in this whole file btw
 	"fmt"
 	"github.com/hugolgst/rich-go/client" // smh client.logout!!
+	"sort"
 )
 
 // code i stole, idek what this is other than it somehow works!!!
@@ -127,6 +128,94 @@ func parseURIMenu() {
 	advancedMenu()
 }
 
+func fastFlagRemoveMenu() {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - fastFlagRemoveMenu()"
+	RPCActivity(rpc)
+
+	var flagMap = GetFFlagMap()
+	var fastFlagRemoveContext Context
+	fastFlagRemoveContext.Header = "Add a fast flag"
+	fastFlagRemoveContext.Content = []string{
+		"You are currently removing a FFlag",
+		"Input the FFlag you want to remove",
+		"Example: FFlagDebugSkyGray",
+		"Do not add quotations or anything!",
+		"",
+		"Current FFlags: ",
+	}
+
+	keys := make([]string, 0, len(flagMap))
+	for k := range flagMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, flag := range keys {
+		fastFlagRemoveContext.Content = append(fastFlagRemoveContext.Content, flag+": "+flagMap[flag])
+	}
+
+	var choice string = ContextPrompt(fastFlagRemoveContext)
+	RemoveFFlagFromConfig(choice)
+}
+
+func fastFlagAddMenu() {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - fastFlagAddMenu()"
+	RPCActivity(rpc)
+
+	var flagMap = GetFFlagMap()
+	var fastFlagAddContext Context
+	fastFlagAddContext.Header = "Add a fast flag"
+	fastFlagAddContext.Content = []string{
+		"You are currently adding a FFlag",
+		"Input the FFlag you want to add",
+		"Example: FFlagDebugSkyGray",
+		"Do not add quotations or anything!",
+		"",
+		"Current FFlags: ",
+	}
+
+	keys := make([]string, 0, len(flagMap))
+	for k := range flagMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, flag := range keys {
+		fastFlagAddContext.Content = append(fastFlagAddContext.Content, flag+": "+flagMap[flag])
+	}
+
+	var choice1 string = ContextPrompt(fastFlagAddContext)
+
+	var fastFlagDataContext Context
+	fastFlagDataContext.Header = "Add a fast flag"
+	fastFlagDataContext.Content = []string{
+		"You are adding data to a FFlag!",
+		"Input the data for the FFlag",
+		"Example: True",
+		"Do not add quotations or anything!",
+		"",
+		"Current FFlags: ",
+	}
+
+	keys1 := make([]string, 0, len(flagMap))
+	for k := range flagMap {
+		keys1 = append(keys1, k)
+	}
+	sort.Strings(keys1)
+
+	for _, flag := range keys1 {
+		fastFlagAddContext.Content = append(fastFlagAddContext.Content, flag+": "+flagMap[flag])
+	}
+
+	var choice2 string = ContextPrompt(fastFlagDataContext)
+
+	AddFFlagtoConfig(choice1, choice2)
+}
+
 // menu for adding/removing fast flags
 func fastFlagMenu() {
 	var rpc RPCQuery
@@ -134,15 +223,47 @@ func fastFlagMenu() {
 	rpc.Where = "In RosewaterCLI - fastFlagMenu()"
 	RPCActivity(rpc)
 
+	var flagMap = GetFFlagMap()
 	var fastFlagContext Context
 	fastFlagContext.Header = "Rosewater Fast Flag Configuration"
 	fastFlagContext.Content = []string{
 		"This is the fflag config menu for Rosewater",
-		"You can add an fflag with 'fflag-add'",
-		"You can remove one with 'fflag-remove'",
+		"You can add an fflag with 'add'",
+		"You can remove one with 'remove'",
 		"both options take you to a new menu",
+		"back goes back to the previous menu",
 		"Current FFlags: ",
 	}
+
+	keys := make([]string, 0, len(flagMap))
+	for k := range flagMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, flag := range keys {
+		fastFlagContext.Content = append(fastFlagContext.Content, flag+": "+flagMap[flag])
+	}
+
+	fastFlagContext.Options = []string{
+		"add",
+		"remove",
+		"back",
+	}
+	var choice string = ContextPrompt(fastFlagContext)
+
+	switch choice{
+		case "add", "0":
+			fastFlagAddMenu()
+		case "remove", "1":
+			fastFlagRemoveMenu()
+		case "back", "2":
+			return
+		case "exit":
+			os.Exit(1)
+		default: unknownOptionMenu(choice)
+	}
+	fastFlagMenu()
 }
 
 // user configuration menu
@@ -162,21 +283,25 @@ func usrConfigMenu() {
 		"If you do not understand them!",
 	}
 	configContext.Options = []string{
-		"fflag-menu",
 		"rpc-menu",
 		"rosestrap-menu",
+		"fflag-menu",
+		"back",
 	}
 	var answer string = ContextPrompt(configContext)
 
 	switch answer {
-		case "fflag-menu", "0":
+		case "rpc-menu", "0":
 
-		case "rpc-menu", "1":
+		case "rosestrap-menu", "1":
 
-		case "rosestrap-menu", "2":
-
+		case "fflag-menu", "2":
+			fastFlagMenu()
+		case "back", "3":
+			return
 		default: unknownOptionMenu(answer)
 	}
+	usrConfigMenu()
 }
 
 // user advanced menu, we LOVE recursion!!!!
@@ -225,7 +350,6 @@ func advancedMenu() {
 	}
 
 	var choice = ContextPrompt(advancedContext)
-	var exit bool = false
 	switch choice {
 		case "uri-setup", "0":
 			SetupURI()
@@ -250,15 +374,13 @@ func advancedMenu() {
 		case "debug-diagnose", "10":
 			DiagnosticTool()
 		case "back", "11":
-			exit = true
+			return
 		case "exit":
 			os.Exit(1)
 		default:
 			unknownOptionMenu(choice)
 	}
-	if !exit {
-		advancedMenu()
-	}
+	advancedMenu()
 }
 
 // simple user menu, if you dont know how to use this then like whatever yo!!!
@@ -275,17 +397,18 @@ func startedUser() {
 	var starterHeader string = "Welcome to RosewaterCLI!"
 	starterInfo := [7]string{
 		"This is the interactive installer!",
-		"You can install rosemary+roblox with \"full-install\"",
+		"You can install roblox with \"install\"",
 		"You can also use the index next to the option...",
 		"",
-		"You can also update roblox using \"update\"",
+		"You can configure various things with \"config\"",
 		"Furthermore, after install, you can run with \"run\"",
 		"Exit with \"exit\", good luck!",
 	}
-	starterOptions := [6]string{
+	starterOptions := [7]string{
 		"full-install",
 		"update",
 		"uninstall",
+		"config",
 		"run",
 		"debug",
 		"exit",
@@ -318,11 +441,13 @@ func startedUser() {
 			if choice == "YES" || choice == "0" {
 				Uninstall()
 			}
-		case "run", "2":
+		case "config", "2":
+			usrConfigMenu()
+		case "run", "3":
 			RunHeadless("app")
-		case "debug", "3":
+		case "debug", "4":
 			advancedMenu()
-		case "exit", "4":
+		case "exit", "5":
 			os.Exit(1)
 		default:
 			unknownOptionMenu(given)

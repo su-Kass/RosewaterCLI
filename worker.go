@@ -195,6 +195,68 @@ func SetupEnvironment(downloadAfter bool) {
 	if downloadAfter {InitialDownloads()}
 }
 
+func GetFFlagMap() map[string]string {
+	var success, info = GetEnvironment()
+	if !success {fmt.Printf("Could not edit fflag: %v\n", (fmt.Errorf("Could not get environment for user files!")))}
+
+	var fastFlagFile = info.UserFFlagFile
+	var flagJson, err = ReadLn(fastFlagFile, 1)
+	if err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return nil}
+
+	var fastFlagMap map[string]string
+	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
+		fmt.Printf("Could not unmarshal json! Reason: %v\n", err)
+		return nil
+	}
+	return fastFlagMap
+}
+
+func RemoveFFlagFromConfig(fastFlag string) {
+	var success, info = GetEnvironment()
+	if !success {fmt.Printf("Could not edit fflag: %v\n", (fmt.Errorf("Could not get environment for user files!")))}
+
+	var fastFlagFile = info.UserFFlagFile
+	var flagJson, err = ReadLn(fastFlagFile, 1)
+	if err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
+
+	var fastFlagMap map[string]string
+	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
+		fmt.Printf("Could not unmarshal json! Reason: %v\n", err)
+		return
+	}
+
+	delete(fastFlagMap, fastFlag)
+	var remarshal, err1 = json.Marshal(fastFlagMap)
+	if err1 != nil {
+		fmt.Printf("Could not marshal! Reason %v\n", err1)
+		remarshal = []byte(flagJson)
+	}
+	WriteLn(fastFlagFile, 1, string(remarshal))
+}
+
+func AddFFlagtoConfig(fastFlag string, data string) {
+	var success, info = GetEnvironment()
+	if !success {fmt.Printf("Could not edit fflag: %v\n", (fmt.Errorf("Could not get environment for user files!")))}
+
+	var fastFlagFile = info.UserFFlagFile
+	var flagJson, err = ReadLn(fastFlagFile, 1)
+	if err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
+
+	var fastFlagMap map[string]string
+	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
+		fmt.Printf("Could not unmarshal json! Reason: %v\n", err)
+		return
+	}
+
+	fastFlagMap[fastFlag] = data
+	var remarshal, err1 = json.Marshal(fastFlagMap)
+	if err1 != nil {
+		fmt.Printf("Could not marshal! Reason %v\n", err1)
+		remarshal = []byte(flagJson)
+	}
+	WriteLn(fastFlagFile, 1, string(remarshal))
+}
+
 type UserPreference struct {
 	RPC struct {
 		Delay     int
