@@ -263,7 +263,7 @@ func roseStrapMenu() {
 		"You can toggle window moving with 'toggle-transform' (requires X)",
 		"You can toggle Bloxstrap RPC parsing with 'toggle-rpc'",
 		"You can toggle XOverWayland X compatibility with 'toggle-xoverwayland'",
-		"You can toggle RoseStrap entirely with 'toggle-rosestrap"
+		"You can toggle RoseStrap entirely with 'toggle-rosestrap",
 		"back goes back to the previous menu",
 		"",
 		"Current Settings",
