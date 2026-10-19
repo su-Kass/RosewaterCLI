@@ -154,7 +154,10 @@ func fastFlagRemoveMenu() {
 	sort.Strings(keys)
 
 	for _, flag := range keys {
-		fastFlagRemoveContext.Content = append(fastFlagRemoveContext.Content, flag+": "+flagMap[flag])
+		fastFlagRemoveContext.Content = append(
+			fastFlagRemoveContext.Content,
+			fmt.Sprintf("%s: %v", flag, flagMap[flag]),
+		)
 	}
 
 	var choice string = ContextPrompt(fastFlagRemoveContext)
@@ -186,7 +189,10 @@ func fastFlagAddMenu() {
 	sort.Strings(keys)
 
 	for _, flag := range keys {
-		fastFlagAddContext.Content = append(fastFlagAddContext.Content, flag+": "+flagMap[flag])
+		fastFlagAddContext.Content = append(
+			fastFlagAddContext.Content,
+			fmt.Sprintf("%s: %v", flag, flagMap[flag]),
+		)
 	}
 
 	var choice1 string = ContextPrompt(fastFlagAddContext)
@@ -208,8 +214,11 @@ func fastFlagAddMenu() {
 	}
 	sort.Strings(keys1)
 
-	for _, flag := range keys1 {
-		fastFlagAddContext.Content = append(fastFlagAddContext.Content, flag+": "+flagMap[flag])
+	for _, flag := range keys {
+		fastFlagDataContext.Content = append(
+			fastFlagDataContext.Content,
+			fmt.Sprintf("%s: %v", flag, flagMap[flag]),
+		)
 	}
 
 	var choice2 string = ContextPrompt(fastFlagDataContext)
@@ -373,6 +382,7 @@ func fastFlagMenu() {
 		"You can remove one with 'remove'",
 		"both options take you to a new menu",
 		"back goes back to the previous menu",
+		"",
 		"Current FFlags: ",
 	}
 
@@ -383,7 +393,10 @@ func fastFlagMenu() {
 	sort.Strings(keys)
 
 	for _, flag := range keys {
-		fastFlagContext.Content = append(fastFlagContext.Content, flag+": "+flagMap[flag])
+		fastFlagContext.Content = append(
+			fastFlagContext.Content,
+			fmt.Sprintf("%s: %v", flag, flagMap[flag]),
+		)
 	}
 
 	fastFlagContext.Options = []string{

@@ -202,7 +202,7 @@ func SetupEnvironment(downloadAfter bool) {
 	if downloadAfter {InitialDownloads()}
 }
 
-func GetFFlagMap() map[string]string {
+func GetFFlagMap() map[string]any {
 	var success, info = GetEnvironment()
 	if !success {fmt.Printf("Could not edit fflag: %v\n", (fmt.Errorf("Could not get environment for user files!")))}
 
@@ -210,7 +210,7 @@ func GetFFlagMap() map[string]string {
 	var flagJson, err = ReadLn(fastFlagFile, 1)
 	if !err {fmt.Printf("Unable to locate fflag details! Reason: Could not read json from %s\n", fastFlagFile); return nil}
 
-	var fastFlagMap map[string]string
+	var fastFlagMap map[string]any
 	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
 		fmt.Printf("Could not unmarshal json! Reason: %v\n", err)
 		return nil
@@ -226,7 +226,7 @@ func RemoveFFlagFromConfig(fastFlag string) {
 	var flagJson, err = ReadLn(fastFlagFile, 1)
 	if !err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
 
-	var fastFlagMap map[string]string
+	var fastFlagMap map[string]any
 	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
 		fmt.Printf("Could not unmarshal json! Reason: %v\n", err)
 		return
@@ -249,7 +249,7 @@ func AddFFlagtoConfig(fastFlag string, data string) {
 	var flagJson, err = ReadLn(fastFlagFile, 1)
 	if !err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
 
-	var fastFlagMap map[string]string
+	var fastFlagMap map[string]any
 	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
 		fmt.Printf("Could not unmarshal json! Reason: %v\n", err)
 		return
