@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/hugolgst/rich-go/client" // smh client.logout!!
 	"sort"
+	"strconv"
 )
 
 // code i stole, idek what this is other than it somehow works!!!
@@ -76,7 +77,7 @@ func unknownOptionMenu(command string) {
 	var choice = ContextPrompt(unknownMenuContext)
 	if choice != "OK" || choice == "0" {
 		fmt.Println(red+underline+"INFO"+reset+red+" : "+reset+yellow+"User error, read the interactive CLI info."+reset)
-		os.Exit(1)
+		Quit(1)
 	}
 }
 
@@ -216,6 +217,145 @@ func fastFlagAddMenu() {
 	AddFFlagtoConfig(choice1, choice2)
 }
 
+func askIntMenu() int {
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - askIntMenu()"
+	RPCActivity(rpc)
+
+	var intContext Context
+	intContext.Header = "Rosewater Integer Request"
+	intContext.Content = []string{
+		"Please type a whole number: ",
+	}
+	var integer, err = strconv.Atoi(ContextPrompt(intContext))
+	if err != nil {return 1}
+	return integer
+}
+
+//type UserPreference struct {
+//	RPC struct {
+//		Delay     int
+//		ShowGame  bool
+//		Enabled   bool
+//	}
+//
+//	RoseStrap struct {
+//		AllowWinTrans bool
+//		AllowRPCQuery bool
+//		XOverWayland  bool
+//		Enabled	      bool
+//	}
+//}
+
+func roseStrapMenu() {
+	var info = GetUserPreference()
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - roseStrapMenu()"
+	RPCActivity(rpc)
+
+	var roseStrapContext Context
+	roseStrapContext.Header = "Rosewater RoseStrap Configuration"
+	roseStrapContext.Content = []string{
+		"This is the RoseStrap config menu for Rosewater",
+		"",
+		"You can configure the delay between rpc swaps with 'rpc-delay'",
+		"You can toggle showing the game with 'toggle-game'",
+		"You can toggle on/off RPC with 'toggle-all'",
+		"back goes back to the previous menu",
+		"",
+		"Current Settings",
+		"Allow Window Transformation: "+strconv.FormatBool(info.RoseStrap.AllowWinTrans),
+		"Bloxstrap RPC Translation: "+strconv.FormatBool(info.RoseStrap.AllowRPCQuery),
+		"X Over Wayland: "+strconv.FormatBool(info.RoseStrap.XOverWayland),
+		"RoseStrap Enabled: "+strconv.FormatBool(info.RoseStrap.Enabled),
+	}
+	roseStrapContext.Options = []string{
+		"toggle-transform",
+		"toggle-rpc",
+		"toggle-xoverwayland",
+		"toggle-rosestrap",
+		"back",
+	}
+	var choice = ContextPrompt(roseStrapContext)
+
+	switch choice {
+		case "toggle-transform", "0":
+			var newPreference = info
+			newPreference.RoseStrap.AllowWinTrans = !newPreference.RoseStrap.AllowWinTrans
+			UpdateUserPreference(newPreference)
+		case "toggle-rpc", "1":
+			var newPreference = info
+			newPreference.RoseStrap.AllowRPCQuery = !newPreference.RoseStrap.AllowRPCQuery
+			UpdateUserPreference(newPreference)
+		case "toggle-xoverwayland", "2":
+			var newPreference = info
+			newPreference.RoseStrap.XOverWayland = !newPreference.RoseStrap.XOverWayland
+			UpdateUserPreference(newPreference)
+		case "toggle-rosestrap", "3":
+			var newPreference = info
+			newPreference.RoseStrap.Enabled = !newPreference.RoseStrap.Enabled
+			UpdateUserPreference(newPreference)
+		case "back", "4":
+			return
+		default: unknownOptionMenu(choice)
+	}
+	roseStrapMenu()
+}
+
+func rpcMenu() {
+	var info = GetUserPreference()
+	var rpc RPCQuery
+	rpc.Action = "Configuring "
+	rpc.Where = "In RosewaterCLI - rpcMenu()"
+	RPCActivity(rpc)
+
+	var delay string = strconv.Itoa(info.RPC.Delay)
+
+	var rpcContext Context
+	rpcContext.Header = "Rosewater Rich Presence Configuration"
+	rpcContext.Content = []string{
+		"This is the RPC config menu for Rosewater",
+		"",
+		"You can configure the delay between rpc swaps with 'rpc-delay'",
+		"You can toggle showing the game with 'toggle-game'",
+		"You can toggle on/off RPC with 'toggle-all'",
+		"back goes back to the previous menu",
+		"",
+		"Current Settings",
+		"Delay: "+delay,
+		"Show Game: "+strconv.FormatBool(info.RPC.ShowGame),
+		"RPC: "+strconv.FormatBool(info.RPC.Enabled),
+	}
+
+	rpcContext.Options = []string{
+		"rpc-delay",
+		"toggle-game",
+		"toggle-all",
+		"back",
+	}
+	var choice string = ContextPrompt(rpcContext)
+	switch choice {
+		case "rpc-delay", "0":
+			var delay = askIntMenu()
+			var newPreference = info
+			newPreference.RPC.Delay = delay
+			UpdateUserPreference(newPreference)
+		case "toggle-game", "1":
+			var newPreference = info
+			newPreference.RPC.ShowGame = !newPreference.RPC.ShowGame
+			UpdateUserPreference(newPreference)
+		case "toggle-all", "2":
+			var newPreference = info
+			newPreference.RPC.Enabled = !newPreference.RPC.Enabled
+			UpdateUserPreference(newPreference)
+		case "back", "3":
+			return
+		default: unknownOptionMenu(choice)
+	}
+	rpcMenu()
+}
 // menu for adding/removing fast flags
 func fastFlagMenu() {
 	var rpc RPCQuery
@@ -227,8 +367,8 @@ func fastFlagMenu() {
 	var fastFlagContext Context
 	fastFlagContext.Header = "Rosewater Fast Flag Configuration"
 	fastFlagContext.Content = []string{
-		"This is the fflag config menu for Rosewater",
-		"You can add an fflag with 'add'",
+		"This is the FFlag config menu for Rosewater",
+		"You can add an FFlag with 'add'",
 		"You can remove one with 'remove'",
 		"both options take you to a new menu",
 		"back goes back to the previous menu",
@@ -260,7 +400,7 @@ func fastFlagMenu() {
 		case "back", "2":
 			return
 		case "exit":
-			os.Exit(1)
+			Quit(1)
 		default: unknownOptionMenu(choice)
 	}
 	fastFlagMenu()
@@ -292,9 +432,9 @@ func usrConfigMenu() {
 
 	switch answer {
 		case "rpc-menu", "0":
-
+			rpcMenu()
 		case "rosestrap-menu", "1":
-
+			roseStrapMenu()
 		case "fflag-menu", "2":
 			fastFlagMenu()
 		case "back", "3":
@@ -329,7 +469,7 @@ func advancedMenu() {
 		"do-setup -- sets up Rosewater",
 		"do-setup-env -- sets up specifically the Rosewater environment",
 		"do-setup-upd-env -- updates the Rosewater environment",
-		"do-setup-cfg",
+		"do-setup-cfg -- sets up user configs, will overwrite old ones",
 		"debug-diagnose -- Gives all information from the Rosewater environment",
 		"back -- goes back to the previous menu",
 	}
@@ -376,7 +516,7 @@ func advancedMenu() {
 		case "back", "11":
 			return
 		case "exit":
-			os.Exit(1)
+			Quit(1)
 		default:
 			unknownOptionMenu(choice)
 	}
@@ -387,7 +527,6 @@ func advancedMenu() {
 // we love declaring variables multiple times, honestly i should probably pass the variables made here to the next instance to stop the silly memory leak-like behaviour
 // oh well... this is just a shitty installer anyways :3
 func startedUser() {
-	defer client.Logout()
 	var rpc RPCQuery
 	rpc.Action = "Configuring "
 	rpc.Where = "In RosewaterCLI - startedUser()"
@@ -404,9 +543,8 @@ func startedUser() {
 		"Furthermore, after install, you can run with \"run\"",
 		"Exit with \"exit\", good luck!",
 	}
-	starterOptions := [7]string{
-		"full-install",
-		"update",
+	starterOptions := [6]string{
+		"install",
 		"uninstall",
 		"config",
 		"run",
@@ -448,7 +586,7 @@ func startedUser() {
 		case "debug", "4":
 			advancedMenu()
 		case "exit", "5":
-			os.Exit(1)
+			Quit(1)
 		default:
 			unknownOptionMenu(given)
 	}
@@ -458,34 +596,37 @@ func startedUser() {
 
 // lazy ass flags implementation because i dont care :sob:
 func main() {
+	var dontdostupidshit bool = false
+	RunSignalHandler()
+	RPCLogin()
+	defer client.Logout()
 	flag, data := ReturnArguments()
-
 	if flag == "--run-rosewater" {
+		dontdostupidshit = true
 		RunHeadless("app")
-		os.Exit(1)
 	}
 
 	if flag == "--uri" {
-		RPCLogin()
+		dontdostupidshit = true
 		RunHeadless(data)
-		os.Exit(1)
 	}
 
 	// code just has a sort of loop break here for the launchTerminal() function lol
 	if flag == "--not-headless" {
-		RPCLogin()
+		if dontdostupidshit {Quit(1)}
 		startedUser()
 		return
 	}
 
 	if !isTerminal(os.Stdin) && !isTerminal(os.Stdout) {
+		if dontdostupidshit {Quit(1)}
 		if launchTerminal() {
 			return
 		}
 	}
 	if flag == "" {
-		RPCLogin()
+		if dontdostupidshit {Quit(1)}
 		startedUser()
 	}
-	defer client.Logout()
+	Quit(1)
 }

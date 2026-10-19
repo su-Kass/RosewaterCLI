@@ -23,6 +23,8 @@ type RPCQuery struct {
 }
 
 func RPCActivity(query RPCQuery) {
+	var preference = GetUserPreference()
+	if !preference.RPC.Enabled {return}
 	start := time.Now()
 	var err = client.SetActivity(client.Activity{
 		Details: query.Action+programName,

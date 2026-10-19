@@ -42,6 +42,8 @@ type WindowQueryData struct {
 }
 
 func SetWindow(parent int, data WindowQueryData) error {
+	var preference = GetUserPreference()
+	if !preference.RoseStrap.AllowWinTrans {return fmt.Errorf("SetWindow disabled by client")}
 	log.Println("Modifying Window Options")
 	var err, processes = CrawlProc(parent)
 	if err != nil {return fmt.Errorf("Could not set window size! Reason: %w", err)}

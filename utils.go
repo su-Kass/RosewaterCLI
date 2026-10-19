@@ -8,13 +8,39 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"path/filepath"
 	"runtime"
 	"time"
 	"net/url"
 	"strings"
 	"bufio"
+	"github.com/hugolgst/rich-go/client"
 )
+
+func Quit(code int) {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		defer func() { recover() }()
+		client.Logout()
+	}()
+	select {
+		case <-done:
+		case <-time.After(time.Second):
+	}
+	os.Exit(code)
+}
+
+func RunSignalHandler() {
+	channel := make(chan os.Signal, 1)
+	signal.Notify(channel, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	go func() {
+		<-channel
+		Quit(130)
+	}()
+}
 
 // god i love structs...
 type UserData struct {

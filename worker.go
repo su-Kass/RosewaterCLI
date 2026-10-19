@@ -37,7 +37,6 @@ func getLatestRosemary() (fetched error, rosemaryInfo SoftwareInfo) {
 	req, err := http.NewRequest("GET", api, nil) // no way???
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1) // watch me make the return better, you arent expecting this!
 		return fmt.Errorf("Failed to get info: %w", err), info // wow im so smart, you saw that right?
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
@@ -71,7 +70,7 @@ func getLatestRosemary() (fetched error, rosemaryInfo SoftwareInfo) {
 
 	nameParts := strings.Split(name, "-")
 	if len(nameParts) < 2 {
-		os.Exit(1)
+		Quit(1)
 	}
 	var version string = nameParts[1]
 	var filename string = version+".AppImage"
@@ -201,7 +200,7 @@ func GetFFlagMap() map[string]string {
 
 	var fastFlagFile = info.UserFFlagFile
 	var flagJson, err = ReadLn(fastFlagFile, 1)
-	if err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return nil}
+	if !err {fmt.Printf("Unable to locate fflag details! Reason: Could not read json from %s\n", fastFlagFile); return nil}
 
 	var fastFlagMap map[string]string
 	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
@@ -217,7 +216,7 @@ func RemoveFFlagFromConfig(fastFlag string) {
 
 	var fastFlagFile = info.UserFFlagFile
 	var flagJson, err = ReadLn(fastFlagFile, 1)
-	if err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
+	if !err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
 
 	var fastFlagMap map[string]string
 	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
@@ -240,7 +239,7 @@ func AddFFlagtoConfig(fastFlag string, data string) {
 
 	var fastFlagFile = info.UserFFlagFile
 	var flagJson, err = ReadLn(fastFlagFile, 1)
-	if err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
+	if !err {fmt.Println("Unable to locate fflag details! Reason: Could not read json"); return}
 
 	var fastFlagMap map[string]string
 	if err := json.Unmarshal([]byte(flagJson), &fastFlagMap); err != nil {
@@ -276,7 +275,7 @@ type UserPreference struct {
 // mindless stuff
 func GetUserPreference() UserPreference {
 	var success, info = GetEnvironment()
-	if !success {panic(fmt.Errorf("Could not get environment for user files!"))}
+	if !success {fmt.Printf(yellow+bold+"Could not get user preference info.\n"+reset);return UserPreference{}}
 
 	var configFile = info.UserConfigFile
 	var returnPreference UserPreference
@@ -328,16 +327,16 @@ func SetupUserConfigFiles() {
 	fmt.Printf("user fflag file = %s\n", fastFlagFile)
 	var preference UserPreference
 	// defaults
-	preference.RPC.Delay = 3
+	preference.RPC.Delay = 6
 	preference.RPC.ShowGame = true
 	preference.RPC.Enabled = true
 
 	preference.RoseStrap.Enabled = false
 	preference.RoseStrap.AllowRPCQuery = true
 	preference.RoseStrap.AllowWinTrans = true
-	preference.RoseStrap.XOverWayland = true
+	preference.RoseStrap.XOverWayland = false
 
-	WriteLn(fastFlagFile, 1, "{\"FFlagExample\": \"true\"}")
+	WriteLn(fastFlagFile, 1, "{\"FFlagExample\": \"True\"}")
 
 	UpdateUserPreference(preference)
 }
@@ -507,6 +506,7 @@ func InitialSetup() {
 
 	SetupURI()
 	SetupDesktop()
+	SetupUserConfigFiles()
 }
 
 // aw shit someone installed software and then didnt know how to use it :pensive:
@@ -628,6 +628,17 @@ func findPulseCommon() (string, bool) {
 		return "", false // fuck, well i guess no menus for you buddy!
 }
 
+func loadUserFFlags() {
+	var success, envInfo = GetEnvironment()
+	if !success {log.Printf("Could not load FFlags: Could not load Environment\n")}
+
+	var fastFlagFile = envInfo.UserFFlagFile
+	var robloxLocalFFlagsDir = filepath.Join(envInfo.PrefixDir, "root", "Applications", "RobloxPlayer.app","Contents","MacOS","ClientSettings")
+	// ClientAppSettings.json
+	MakeDir(robloxLocalFFlagsDir)
+	CopyFile(fastFlagFile, filepath.Join(robloxLocalFFlagsDir, "ClientAppSettings.json"), 0644)
+}
+
 type bloxstrapQuery struct {
 	Command string `json:"command"`
 	Data	struct {
@@ -645,10 +656,14 @@ type bloxstrapQuery struct {
 //
 // replaces RunRoblox() now because it was annoying to have two functions for starting
 func RunHeadless(uri string) bool {
+	RPCLogin()
+	var preference = GetUserPreference()
 	defer client.Logout()
 	log.Println(bold + green + "/ᐠ˵- ⩊ -˵マ: " + reset + blue + "Starting roblox" + reset)
 	var success, envInfo = GetEnvironment()
-	if !success {os.Exit(1)}
+	if !success {Quit(1)}
+
+	loadUserFFlags()
 
 	// logging positions
 	var logfileLocation = filepath.Join(envInfo.PrefixDir, "client.log") // it's my loggerona!
@@ -671,8 +686,9 @@ func RunHeadless(uri string) bool {
 	cmd := exec.Command(rosemaryExec, args...)
 
 	var lib, ok = findPulseCommon()
-	if !ok {lib = ""}
+	if !ok {lib = ""; fmt.Println(bold+red+"Failed to preload a pulse audio library! GTK wont work!"+reset)}
 
+	fmt.Println(bold+yellow+"Loaded: "+lib+reset)
 	var envVariables = []string{
 		"ROSEMARY_PREFIX="+filepath.Join(envInfo.PrefixDir,"root"),
 		"ROSEMARY_DECORATIONS=server",
@@ -686,9 +702,10 @@ func RunHeadless(uri string) bool {
 		"SDL_VIDEODRIVER=x11",
 	}
 
-	const xSwap bool = false
-	if xSwap {
-		envVariables = append(envVariables, xCompose...)
+	if preference.RoseStrap.Enabled {
+		if preference.RoseStrap.XOverWayland {
+			envVariables = append(envVariables, xCompose...)
+		}
 	}
 
 	cmd.Env = append(os.Environ(), envVariables...)
@@ -705,6 +722,13 @@ func RunHeadless(uri string) bool {
 	cmd.Stderr = logPipeWrite // STDs
 
 	if err := cmd.Start(); err != nil {return false}
+	if uri == "app" {
+		var startedRPC RPCQuery
+		startedRPC.Action = "Just started "
+		startedRPC.Where = "In the roblox app"
+
+		RPCActivity(startedRPC)
+	}
 
 	var closed bool = false
 	stop := func() {
@@ -721,19 +745,21 @@ func RunHeadless(uri string) bool {
 			time.AfterFunc(time.Second*5, func() {
 				syscall.Kill(-processID, syscall.SIGKILL)
 			})
+		} else {
+			if !preference.RPC.Enabled {return}
+			var idleRPC RPCQuery
+			idleRPC.Action = "Browsing for games on "
+			idleRPC.Where = "Roblox app main menu"
+
+			RPCActivity(idleRPC)
 		}
 	}
 
 	setJoining := func() {
-		if closed {return}
-
-		var joiningRPC RPCQuery
-		joiningRPC.Action = "Joining a game in "
-		joiningRPC.Where = "Establishing a connection"
-
-		RPCActivity(joiningRPC)
+		fmt.Println(cyan+"Joining!"+reset)
 	}
 	setJoined := func() {
+		if !preference.RPC.Enabled {return}
 		if closed {return}
 
 		var playingRPC RPCQuery
@@ -743,16 +769,11 @@ func RunHeadless(uri string) bool {
 		RPCActivity(playingRPC)
 	}
 	setTeleporting := func() {
-		if closed {return}
-
-		var teleportingRPC RPCQuery
-		teleportingRPC.Action = "Swapping places in "
-		teleportingRPC.Where = "Teleporting..."
-
-		RPCActivity(teleportingRPC)
+		fmt.Println(cyan+"Teleporting!"+reset)
 	}
 	bloxstrapSetWindow := func(line string) {
-		if !xSwap {return}
+		if !preference.RoseStrap.Enabled {return}
+		if !preference.RoseStrap.AllowWinTrans {return}
 		start := strings.Index(line, "{")
 		if start == -1 {
 			return
