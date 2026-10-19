@@ -471,6 +471,7 @@ func advancedMenu() {
 		"do-setup-upd-env -- updates the Rosewater environment",
 		"do-setup-cfg -- sets up user configs, will overwrite old ones",
 		"debug-diagnose -- Gives all information from the Rosewater environment",
+		"debug-swap-rosewater-client -- Swaps the current rosewater client with the one currently running",
 		"back -- goes back to the previous menu",
 	}
 
@@ -486,6 +487,7 @@ func advancedMenu() {
 		"do-setup-desktop",
 		"do-setup-cfg",
 		"debug-diagnose",
+		"debug-swap-rosewater-client",
 		"back",
 	}
 
@@ -513,7 +515,9 @@ func advancedMenu() {
 			SetupUserConfigFiles()
 		case "debug-diagnose", "10":
 			DiagnosticTool()
-		case "back", "11":
+		case "debug-swap-rosewater-client", "11":
+			DebugSwapRosewaterClient()
+		case "back", "12":
 			return
 		case "exit":
 			Quit(1)

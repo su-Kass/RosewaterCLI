@@ -28,6 +28,14 @@ type Release struct {
 	} `json:"assets"`
 }
 
+func DebugSwapRosewaterClient() {
+	var _, envInfo = GetEnvironment()
+	var self, _ = os.Executable()
+
+	os.Remove(envInfo.RosewaterFile)
+	CopyFile(self, envInfo.RosewaterFile, 0755)
+}
+
 // gets the latest rosemary build shit and returns as software info struct
 func getLatestRosemary() (fetched error, rosemaryInfo SoftwareInfo) {
 	fmt.Println(bold+green+"/ᐠ˵- ⩊ -˵マ: "+reset+blue+"Fetching latest Rosemary release!"+reset)// mf so giddy, who do you think you are?
@@ -695,6 +703,8 @@ func RunHeadless(uri string) bool {
 		"ROSEMARY_MENU=none",
 		"ROSEMARY_STEAM=0",
 		"LD_PRELOAD="+lib, // DRY is for people with not enough time on their paws!!!
+		"XKB_CONFIG_ROOT=/usr/share/X11/xkb",
+		"WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1",
 	}
 	var xCompose = []string {
 		"WAYLAND_DISPLAY=",
