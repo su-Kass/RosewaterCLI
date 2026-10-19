@@ -260,9 +260,10 @@ func roseStrapMenu() {
 	roseStrapContext.Content = []string{
 		"This is the RoseStrap config menu for Rosewater",
 		"",
-		"You can configure the delay between rpc swaps with 'rpc-delay'",
-		"You can toggle showing the game with 'toggle-game'",
-		"You can toggle on/off RPC with 'toggle-all'",
+		"You can toggle window moving with 'toggle-transform' (requires X)",
+		"You can toggle Bloxstrap RPC parsing with 'toggle-rpc'",
+		"You can toggle XOverWayland X compatibility with 'toggle-xoverwayland'",
+		"You can toggle RoseStrap entirely with 'toggle-rosestrap"
 		"back goes back to the previous menu",
 		"",
 		"Current Settings",
