@@ -28,3 +28,20 @@
 - Ability to add non-destructive "mods" (file replacements)
 - And more :3
 
+## Visual Preview
+
+<p align="center">
+  <img src="Demos/installation.gif" width="730" alt="Rosewater visual preview gif"> 
+</p>
+
+## Beginner installation instructions
+`Make sure git and go are installed to your system`
+```bash
+git clone https://github.com/su-Kass/RosewaterCLI
+cd RosewaterCLI
+go build -o RosewaterCLI .
+./RosewaterCLI
+```
+
+`once you run 'install' you can open rosewater from anywhere on your computer
+using your system search`
